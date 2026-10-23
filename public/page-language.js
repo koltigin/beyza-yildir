@@ -7,7 +7,7 @@
     footer.innerHTML = `<p class="footer-name">Beyza Yıldır</p><div><p class="eyebrow">${copy.contact}</p><a href="/contact/">${copy.message}</a></div><div class="socials" aria-label="Sosyal medya"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer">Instagram &#8599;&#65038;</a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer">Vimeo &#8599;&#65038;</a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer">YouTube &#8599;&#65038;</a></div><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261023-layout1");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261023-layout2");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   let language = localStorage.getItem("beyza-language") || "tr";

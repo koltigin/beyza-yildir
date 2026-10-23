@@ -36,3 +36,11 @@ a,a:visited{color:inherit}
 .entry h2{font-size:clamp(1.5rem,3.2vw,3rem);line-height:.92}
 .contact h1{font-size:clamp(3.25rem,6.2vw,6.75rem);margin:1rem 0 2rem}
 @media(max-width:700px){.page-head h1{font-size:clamp(2.45rem,11vw,3.35rem);margin:.75rem 0 1rem}.prose{padding:2.75rem 1.4rem;font-size:1.04rem;line-height:1.62}.prose p{max-width:none}}
+
+/* Compact desktop counterpart of the mobile interior-page hierarchy. */
+@media(min-width:701px){
+  .page-head{padding:2.4rem max(1.5rem,8vw) 1.85rem}
+  .page-head h1{font-size:clamp(2.8rem,3.7vw,4.25rem);line-height:.86;letter-spacing:-.075em;margin:.65rem 0 .8rem}
+  .page-head>p:last-child{max-width:42rem;margin:.7rem 0 0}
+  .archive{padding-top:clamp(2.5rem,4vw,4.25rem)}
+}
