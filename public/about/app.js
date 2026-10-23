@@ -11,7 +11,7 @@ function renderSharedFooter() {
 
 function renderLanguage({ scroll = false } = {}) {
   document.documentElement.lang = language;
-  document.querySelectorAll("[data-tr][data-en]").forEach((element) => { element.textContent = element.dataset[language]; });
+  document.querySelectorAll("[data-tr][data-en]").forEach((element) => { const copy = element.dataset[language]; element.innerHTML = element.matches("h1") ? `${copy}<em>.</em>` : copy; });
   document.querySelectorAll(".bilingual-about section").forEach((section) => { section.hidden = section.lang !== language; });
   languageButton.innerHTML = "TR <span>/</span> EN";
   renderSharedFooter();

@@ -24,3 +24,15 @@ a,a:visited{color:inherit}
   .prose{padding:2.75rem 1.4rem;font-size:1.1rem;overflow-wrap:anywhere}
   .content-art{min-height:250px;height:66vw;border-bottom-width:6px}
 }
+
+/* Consistent editorial scale for desktop and mobile interior pages. */
+.page-head{padding:clamp(2.75rem,6vw,5.5rem) max(1.5rem,8vw) clamp(2.25rem,4vw,4rem)}
+.page-head h1{font-size:clamp(3.25rem,6.2vw,6.75rem);line-height:.78;letter-spacing:-.09em;margin:.85rem 0 1.15rem}
+.prose{max-width:78rem;margin-inline:auto;padding:clamp(3rem,6vw,5.5rem) max(1.5rem,6vw);font-size:clamp(1.06rem,1.35vw,1.4rem);line-height:1.62}
+.prose p{max-width:58rem;margin:0 auto 1.5em}
+.about-prose{display:block}
+.about-prose section{max-width:58rem;margin-inline:auto}
+.about-prose p:first-child{font-size:1.12em}
+.entry h2{font-size:clamp(1.5rem,3.2vw,3rem);line-height:.92}
+.contact h1{font-size:clamp(3.25rem,6.2vw,6.75rem);margin:1rem 0 2rem}
+@media(max-width:700px){.page-head h1{font-size:clamp(2.45rem,11vw,3.35rem);margin:.75rem 0 1rem}.prose{padding:2.75rem 1.4rem;font-size:1.04rem;line-height:1.62}.prose p{max-width:none}}
