@@ -76,7 +76,7 @@ async function hydratePublishedContent() {
     ]);
     if (worksResponse.ok) {
       const payload = await worksResponse.json();
-      if (payload.works?.length) {
+      if (Array.isArray(payload.works)) {
         works.splice(0, works.length, ...payload.works.map((item, index) => ({
           category: item.category,
           id: item.id,
@@ -91,7 +91,7 @@ async function hydratePublishedContent() {
     }
     if (postsResponse.ok) {
       const payload = await postsResponse.json();
-      if (payload.posts?.length) {
+      if (Array.isArray(payload.posts)) {
         posts.splice(0, posts.length, ...payload.posts.map((item) => ({
           date: String(item.created_at || "").slice(0, 10), tr: item.title_tr, en: item.title_en,
           id: item.id,
