@@ -28,3 +28,16 @@
   .site-footer{padding-bottom:calc(var(--space) + env(safe-area-inset-bottom))}
   .post-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;min-height:0}
 }
+
+/* Desktop counterpart of the compact interior-page hierarchy. */
+@media(min-width:701px){
+  .hero{min-height:clamp(440px,56vh,560px);padding-block:clamp(2.5rem,4vw,3.75rem)}
+  .hero-copy h1{font-size:clamp(3.6rem,6.2vw,6.5rem);line-height:.78;margin:.4rem 0 1.2rem}
+  .hero-line{font-size:clamp(1rem,1.25vw,1.15rem);margin-bottom:1.35rem}
+  .section{padding-block:clamp(3rem,5vw,4.75rem)}
+  .section h2{font-size:clamp(2rem,3.2vw,3.4rem);line-height:.92}
+  .category-band a{min-height:124px;font-size:clamp(1.25rem,1.8vw,2rem)}
+  .exhibition{min-height:210px}.exhibition h2{font-size:clamp(2rem,3.4vw,3.6rem);margin-bottom:1rem}
+  .about{padding-block:clamp(3rem,5vw,4.75rem)}.about h2{font-size:clamp(1.75rem,3vw,3.2rem);max-width:58rem}
+  .footer-name{font-size:clamp(1.8rem,3vw,3.25rem);line-height:.82}
+}
