@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "scripts": {
     "start": "python3 -m http.server 4173 --directory public",
-    "check": "node --check public/app.js && node --check public/content.js && node --check public/works/app.js && node --check public/studio/app.js && node --check public/about/app.js"
+    "check": "node --check public/app.js && node --check public/content.js && node --check public/works/app.js && node --check public/studio/app.js && node --check public/about/app.js && node --check public/contact/app.js"
   }
 }
