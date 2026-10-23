@@ -1,0 +1,9 @@
+{
+  "name": "beyza-yildir-website",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start": "python3 -m http.server 4173 --directory public",
+    "check": "node --check public/app.js && node --check public/studio/app.js"
+  }
+}

@@ -1,0 +1,2 @@
+# Never commit a real value in .dev.vars.
+PUBLIC_ORIGIN=https://your-domain.example

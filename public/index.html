@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Beyza Yıldır — Photography, Collages, Drawings, Films and Video art." />
+    <title>Beyza Yıldır — Artist</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">İçeriğe geç</a>
+    <header class="site-header">
+      <a class="wordmark" href="#top" aria-label="Beyza Yıldır ana sayfa">Beyza<br />Yıldır<span>.</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu <span aria-hidden="true">+</span></button>
+      <nav id="site-nav" class="site-nav" aria-label="Ana menü">
+        <a href="about/">About</a><a href="blog/">Blog</a>
+        <a href="works/?category=Photography">Photography</a>
+        <a href="works/?category=Collages">Collages</a>
+        <a href="works/?category=Drawings">Drawings</a>
+        <a href="works/?category=Films">Films</a>
+        <a href="works/?category=Video-art">Video art</a>
+        <a href="contact/">Contact</a>
+      </nav>
+      <button class="language-toggle" type="button" aria-label="Switch language">TR <span>/</span> EN</button>
+    </header>
+
+    <main id="main">
+      <section id="top" class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow" data-tr="Görsel sanatçı · İstanbul" data-en="Visual artist · Istanbul">Görsel sanatçı · İstanbul</p>
+          <h1 id="hero-title">Beyza<br /><em>Yıldır</em></h1>
+          <p class="hero-line" data-tr="Görüntü, yüzey ve gürültü üzerine çalışmalar." data-en="Works on image, surface, and noise.">Görüntü, yüzey ve gürültü üzerine çalışmalar.</p>
+          <a class="arrow-link" href="#works" data-tr="İşleri keşfet" data-en="Explore the work">İşleri keşfet <span>↘</span></a>
+        </div>
+        <div class="hero-art art art-hero" role="img" aria-label="Temsili soyut sanat çalışması"><span>01</span><b>same<br />mess,<br />brighter<br />colours</b></div>
+      </section>
+
+      <section id="works" class="section works-section" aria-labelledby="works-title">
+        <div class="section-heading"><p class="eyebrow">01 / archive</p><h2 id="works-title" data-tr="Seçilmiş işler" data-en="Selected works">Seçilmiş işler</h2></div>
+        <div id="category-nav" class="category-nav" aria-label="Eser kategorileri"></div>
+        <div id="works-grid" class="works-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="category-band" aria-label="Kategori öne çıkanları">
+        <a id="photography" href="#works" data-category-link="Photography"><span>Photography</span><i>↗</i></a>
+        <a id="collages" href="#works" data-category-link="Collages"><span>Collages</span><i>↗</i></a>
+        <a id="drawings" href="#works" data-category-link="Drawings"><span>Drawings</span><i>↗</i></a>
+        <a id="films" href="#works" data-category-link="Films"><span>Films</span><i>↗</i></a>
+        <a id="video-art" href="#works" data-category-link="Video art"><span>Video art</span><i>↗</i></a>
+      </section>
+
+      <section id="writing" class="section writing-section" aria-labelledby="writing-title">
+        <div class="section-heading"><p class="eyebrow">02 / notes</p><h2 id="writing-title" data-tr="Son yazılar" data-en="Recent writing">Son yazılar</h2></div>
+        <div id="posts" class="posts"></div>
+      </section>
+
+      <section class="exhibition" aria-labelledby="exhibition-title">
+        <p class="eyebrow">03 / now</p><div><h2 id="exhibition-title" data-tr="Yaklaşan sergi" data-en="Upcoming exhibition">Yaklaşan sergi</h2><p class="event-title">Soft Ruins / Yumuşak Harabeler</p><p>12.09—04.10.2026 · İstanbul</p></div><a class="arrow-link" href="#contact" data-tr="Bilgi al" data-en="Get in touch">Bilgi al <span>↗</span></a>
+      </section>
+
+      <section id="about" class="about" aria-labelledby="about-title">
+        <p class="eyebrow">04 / about</p><h2 id="about-title" data-tr="Beyza Yıldır; imge, beden ve gündelik gürültü arasındaki sürtünmeleri fotoğraf, çizim, kolaj ve hareketli görüntü aracılığıyla izler." data-en="Beyza Yıldır traces the friction between image, body, and everyday noise through photography, drawing, collage, and moving image.">Beyza Yıldır; imge, beden ve gündelik gürültü arasındaki sürtünmeleri fotoğraf, çizim, kolaj ve hareketli görüntü aracılığıyla izler.</h2><a class="arrow-link" href="#contact" data-tr="Daha fazlası" data-en="Read more">Daha fazlası <span>↘</span></a>
+      </section>
+    </main>
+
+    <footer id="contact" class="site-footer">
+      <p class="footer-name">Beyza Yıldır</p>
+      <div><p class="eyebrow" data-tr="Bağlantıda kal" data-en="Keep in touch">Bağlantıda kal</p><a href="mailto:hello@beyzayildir.com">hello@beyzayildir.com</a></div>
+      <div class="socials" aria-label="Sosyal medya"><a href="#" aria-label="Instagram bağlantısı">Instagram ↗</a><a href="#" aria-label="Vimeo bağlantısı">Vimeo ↗</a><a href="#" aria-label="YouTube bağlantısı">YouTube ↗</a></div>
+      <p class="copyright">© <span id="year"></span> Beyza Yıldır</p>
+    </footer>
+    <template id="work-template"><article class="work-card"><div class="art"><span class="work-index"></span></div><div class="work-meta"><p class="work-category"></p><h3></h3><p class="work-year"></p></div></article></template>
+    <template id="post-template"><article class="post"><p class="post-date"></p><h3></h3><p class="post-summary"></p><a class="arrow-link" href="#" data-tr="Oku" data-en="Read">Oku <span>↗</span></a></article></template>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

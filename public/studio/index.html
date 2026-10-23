@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" /><title>Beyza Yıldır — Studio</title><link rel="stylesheet" href="/studio/styles.css" />
+  </head>
+  <body>
+    <main class="studio-shell">
+      <header><a href="/" aria-label="Back to public site">← Beyza Yıldır</a><p>Studio / content editor</p></header>
+      <section class="welcome"><p class="kicker">Welcome back</p><h1>Make<br /><em>something</em></h1><p>Choose what you want to publish. Save drafts until every detail is ready.</p></section>
+      <section class="actions" aria-label="Create content"><button type="button" data-type="work"><span>01</span>New work <b>↗</b></button><button type="button" data-type="post"><span>02</span>New writing <b>↗</b></button><button type="button" data-type="exhibition"><span>03</span>New exhibition <b>↗</b></button></section>
+      <section class="editor" hidden aria-live="polite"><div class="editor-top"><p id="editor-label" class="kicker"></p><button id="close-editor" type="button">Close ×</button></div><form id="content-form"><label>Images <input type="file" multiple accept="image/jpeg,image/png,image/webp" /></label><label>Category <select id="category"><option>Photography</option><option>Collages</option><option>Drawings</option><option>Films</option><option>Video art</option></select></label><label id="project-field">Project / series <input name="projectId" placeholder="Optional series name" /></label><div class="language-columns"><fieldset><legend>Türkçe</legend><label>Başlık <input required name="titleTr" /></label><label>Açıklama <textarea required name="descriptionTr" rows="7"></textarea></label></fieldset><fieldset><legend>English</legend><label>Title <input required name="titleEn" /></label><label>Description <textarea required name="descriptionEn" rows="7"></textarea></label></fieldset></div><div class="form-actions"><button class="secondary" type="button" id="save-draft">Save draft</button><button class="primary" type="submit">Publish ↗</button></div></form></section>
+      <section class="content-list"><div><p class="kicker">Content</p><h2>Drafts & published</h2></div><div id="content-items"><p class="empty">Your published works, writing and exhibitions will appear here.</p></div></section>
+    </main><script src="/studio/app.js" defer></script>
+  </body>
+</html>

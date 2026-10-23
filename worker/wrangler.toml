@@ -1,0 +1,12 @@
+name = "beyza-yildir-content-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-22"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beyza-yildir-content"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "beyza-yildir-media"
