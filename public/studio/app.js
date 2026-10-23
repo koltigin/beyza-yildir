@@ -1,13 +1,26 @@
-const labels = { work: "New work", post: "New writing", exhibition: "New exhibition" };
+const contentTypes = {
+  work: { label: "Yeni eser", help: "Bir resim, fotoğraf, kolaj, film ya da video art çalışması ekle. Kategori ve varsa seri bilgisini belirt.", media: "Eser görselleri" },
+  post: { label: "Yeni blog yazısı", help: "Beyza'nın blogunda yayınlanacak iki dilli yazıyı ekle. Kapak görseli isteğe bağlıdır.", media: "Kapak görseli (isteğe bağlı)" },
+  exhibition: { label: "Yeni sergi / etkinlik", help: "Sergi, gösterim, konuşma veya etkinlik duyurusunu tarihleriyle birlikte ekle.", media: "Etkinlik görseli / afişi (isteğe bağlı)" }
+};
 const editor = document.querySelector(".editor");
 let currentType = "work";
-document.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => { currentType = button.dataset.type; editor.hidden = false; document.querySelector("#editor-label").textContent = labels[currentType]; document.querySelector("#category").closest("label").hidden = currentType !== "work"; document.querySelector("#project-field").hidden = currentType !== "work"; document.querySelector("#event-fields").hidden = currentType !== "exhibition"; editor.scrollIntoView({ behavior: "smooth", block: "start" }); }));
+document.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {
+  currentType = button.dataset.type; const details = contentTypes[currentType]; editor.hidden = false;
+  document.querySelector("#editor-label").textContent = details.label;
+  document.querySelector("#editor-help").textContent = details.help;
+  document.querySelector("#media-label").childNodes[0].nodeValue = `${details.media} `;
+  document.querySelector("#category-field").hidden = currentType !== "work";
+  document.querySelector("#project-field").hidden = currentType !== "work";
+  document.querySelector("#event-fields").hidden = currentType !== "exhibition";
+  editor.scrollIntoView({ behavior: "smooth", block: "start" });
+}));
 document.querySelector("#close-editor").addEventListener("click", () => { editor.hidden = true; });
 function notify(message) { const output = document.querySelector(".empty"); output.textContent = message; }
 function escapeHtml(value) { return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character])); }
 function renderManagedContent(content) {
   const target = document.querySelector("#content-items");
-  target.innerHTML = content.length ? content.map((item) => `<article><p>${escapeHtml(item.status)} · ${escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-toggle-id="${item.id}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Unpublish" : "Publish"}</button><button data-delete-id="${item.id}">Delete</button></article>`).join("") : `<p class="empty">Your published works, writing and exhibitions will appear here.</p>`;
+  target.innerHTML = content.length ? content.map((item) => `<article><p>${item.status === "published" ? "yayında" : "taslak"} · ${contentTypes[item.type]?.label || escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-toggle-id="${item.id}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Taslağa al" : "Yayınla"}</button><button data-delete-id="${item.id}">Sil</button></article>`).join("") : `<p class="empty">Eklediğin eserler, blog yazıları ve sergi duyuruları burada görünecek.</p>`;
   target.querySelectorAll("[data-toggle-id]").forEach((button) => button.addEventListener("click", async () => { await fetch(`/api/admin/content/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) }); loadPublishedContent(); }));
   target.querySelectorAll("[data-delete-id]").forEach((button) => button.addEventListener("click", async () => { if (!confirm("Delete this content and its media?")) return; await fetch(`/api/admin/content/${button.dataset.deleteId}`, { method: "DELETE" }); loadPublishedContent(); }));
 }
@@ -36,19 +49,20 @@ async function optimiseImage(file) {
 }
 document.querySelectorAll(".editor-tools button").forEach((button) => button.addEventListener("click", () => {
   const editorForLanguage = button.closest("fieldset").querySelector(".rich-editor"); editorForLanguage.focus();
-  document.execCommand(button.dataset.command, false, button.dataset.value || null);
+  const value = button.dataset.command === "createLink" ? window.prompt("Bağlantı adresini yapıştır:") : (button.dataset.value || null);
+  if (button.dataset.command !== "createLink" || value) document.execCommand(button.dataset.command, false, value);
 }));
 async function submit(status) {
   const form = document.querySelector("#content-form");
   const data = new FormData(form);
   const descriptionTr = document.querySelector('[data-editor="descriptionTr"]').innerHTML.trim();
   const descriptionEn = document.querySelector('[data-editor="descriptionEn"]').innerHTML.trim();
-  if (!descriptionTr || !descriptionEn) throw new Error("Please complete both Turkish and English descriptions.");
+  if (!descriptionTr || !descriptionEn) throw new Error("Türkçe ve İngilizce açıklamaların ikisini de doldur.");
   const images = [...(form.querySelector('input[type="file"]')?.files || [])];
   const media = await Promise.all(images.map(async (image) => {
     const optimised = await optimiseImage(image);
     const uploaded = await fetch("/api/admin/media", { method: "POST", headers: { "content-type": optimised.type || "image/webp" }, body: optimised });
-    if (!uploaded.ok) throw new Error("Image upload failed.");
+    if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
     return uploaded.json();
   }));
   const response = await fetch("/api/admin/content", {
@@ -57,8 +71,8 @@ async function submit(status) {
       projectId: data.get("projectId") || null, titleTr: data.get("titleTr"), titleEn: data.get("titleEn"),
       bodyTr: descriptionTr, bodyEn: descriptionEn, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, media })
   });
-  if (!response.ok) throw new Error("The protected publishing API is not available yet.");
+  if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
-document.querySelector("#save-draft").addEventListener("click", async () => { try { await submit("draft"); notify("Draft saved."); } catch (_) { saveLocal("draft"); notify("Draft saved locally for preview."); } });
-document.querySelector("#content-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await submit("published"); notify("Published successfully."); } catch (_) { saveLocal("published"); notify("Published locally for preview."); } });
+document.querySelector("#save-draft").addEventListener("click", async () => { try { await submit("draft"); notify("Taslak kaydedildi."); loadPublishedContent(); } catch (error) { saveLocal("draft"); notify(error.message || "Taslak yalnızca bu tarayıcıda kaydedildi."); } });
+document.querySelector("#content-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await submit("published"); notify("İçerik yayınlandı."); loadPublishedContent(); } catch (error) { saveLocal("published"); notify(error.message || "İçerik yalnızca bu tarayıcıda kaydedildi."); } });
 loadPublishedContent();
