@@ -1,4 +1,5 @@
 const categories = ["All", "Photography", "Collages", "Drawings", "Films", "Video art"];
+const categoryLabels = { Photography: { tr: "Fotoğraf", en: "Photography" }, Collages: { tr: "Kolajlar", en: "Collages" }, Drawings: { tr: "Çizimler", en: "Drawings" }, Films: { tr: "Filmler", en: "Films" }, "Video art": { tr: "Video sanatı", en: "Video art" } };
 const works = [
   { category: "Photography", year: "2026", tr: "Kırık Saatler", en: "Broken Clocks", className: "art-red" },
   { category: "Collages", year: "2026", tr: "İnce Sesler", en: "Thin Noises", className: "art-blue" },
@@ -42,7 +43,7 @@ function renderCategories() {
   categories.forEach((category) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = category === "All" ? (language === "tr" ? "Tümü" : "All") : category;
+    button.textContent = category === "All" ? (language === "tr" ? "Tümü" : "All") : categoryLabels[category][language];
     button.classList.toggle("is-active", category === activeCategory);
     button.addEventListener("click", () => { activeCategory = category; renderCategories(); renderWorks(); });
     nav.append(button);
