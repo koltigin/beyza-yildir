@@ -13,7 +13,7 @@ const posts = [
   { date: "02.08.2026", tr: "Stüdyoda bir gün", en: "A day in the studio", trSummary: "Yüzey, boya ve bekleme üzerine kısa bir günlük.", enSummary: "A short diary of surface, paint, and waiting." },
   { date: "16.06.2026", tr: "Kesip tekrar bakmak", en: "Cutting and looking again", trSummary: "Kolajın düşünme biçimleri hakkında.", enSummary: "On collage as a way of thinking." }
 ];
-let language = "tr";
+let language = localStorage.getItem("beyza-language") || "tr";
 let activeCategory = "All";
 const $ = (selector) => document.querySelector(selector);
 
@@ -33,7 +33,8 @@ function renderWorks() {
     node.querySelector(".work-category").textContent = work.category;
     node.querySelector("h3").textContent = work[language];
     node.querySelector(".work-year").textContent = work.year;
-    node.querySelector(".work-link").href = work.id ? `/work/?id=${encodeURIComponent(work.id)}` : `/works/?category=${encodeURIComponent(work.category)}`;
+    const categoryPath = { Photography: "photography", Collages: "collages", Drawings: "drawings", Films: "films", "Video art": "video-art" }[work.category];
+    node.querySelector(".work-link").href = work.id ? `/work/?id=${encodeURIComponent(work.id)}` : `/${categoryPath}/`;
     grid.append(node);
   });
 }
@@ -51,10 +52,11 @@ function renderCategories() {
 }
 function renderPosts() {
   const list = $("#posts"); const template = $("#post-template"); list.innerHTML = "";
-  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = post[`${language}Summary`]; node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/blog/"; list.append(node); });
+  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = post[`${language}Summary`]; node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
 }
 function changeLanguage() {
   language = language === "tr" ? "en" : "tr";
+  localStorage.setItem("beyza-language", language);
   document.documentElement.lang = language;
   document.querySelectorAll("[data-tr][data-en]").forEach((el) => { el.textContent = el.dataset[language]; });
   $(".language-toggle").innerHTML = language === "tr" ? "TR <span>/</span> EN" : "TR <span>/</span> EN";
@@ -63,7 +65,7 @@ function changeLanguage() {
 $(".language-toggle").addEventListener("click", changeLanguage);
 $(".menu-toggle").addEventListener("click", (event) => { const expanded = event.currentTarget.getAttribute("aria-expanded") === "true"; event.currentTarget.setAttribute("aria-expanded", String(!expanded)); $(".site-nav").classList.toggle("is-open", !expanded); });
 document.querySelectorAll("[data-category-link]").forEach((link) => link.addEventListener("click", () => { activeCategory = link.dataset.categoryLink; renderCategories(); renderWorks(); }));
-$("#year").textContent = new Date().getFullYear(); renderCategories(); renderWorks(); renderPosts();
+$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; renderCategories(); renderWorks(); renderPosts();
 
 // In local preview this keeps the authored sample content visible. On the
 // production domain the Worker replaces it with published D1 content.

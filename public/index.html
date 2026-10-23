@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Beyza Yıldır — Photography, Collages, Drawings, Films and Video art." />
     <title>Beyza Yıldır — Artist</title>
-    <link rel="stylesheet" href="/styles.css?v=20261023-dark" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-dark2" />
   </head>
   <body>
     <a class="skip-link" href="#main">İçeriğe geç</a>
@@ -14,11 +14,11 @@
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu <span aria-hidden="true">+</span></button>
       <nav id="site-nav" class="site-nav" aria-label="Ana menü">
         <a href="about/" data-tr="Hakkında" data-en="About">Hakkında</a><a href="blog/" data-tr="Blog" data-en="Blog">Blog</a>
-        <a href="works/?category=Photography" data-tr="Fotoğraf" data-en="Photography">Fotoğraf</a>
-        <a href="works/?category=Collages" data-tr="Kolajlar" data-en="Collages">Kolajlar</a>
-        <a href="works/?category=Drawings" data-tr="Çizimler" data-en="Drawings">Çizimler</a>
-        <a href="works/?category=Films" data-tr="Filmler" data-en="Films">Filmler</a>
-        <a href="works/?category=Video-art" data-tr="Video sanatı" data-en="Video art">Video sanatı</a>
+        <a href="photography/" data-tr="Fotoğraf" data-en="Photography">Fotoğraf</a>
+        <a href="collages/" data-tr="Kolajlar" data-en="Collages">Kolajlar</a>
+        <a href="drawings/" data-tr="Çizimler" data-en="Drawings">Çizimler</a>
+        <a href="films/" data-tr="Filmler" data-en="Films">Filmler</a>
+        <a href="video-art/" data-tr="Video sanatı" data-en="Video art">Video sanatı</a>
         <a href="contact/" data-tr="İletişim" data-en="Contact">İletişim</a>
       </nav>
       <button class="language-toggle" type="button" aria-label="Switch language">TR <span>/</span> EN</button>
@@ -42,11 +42,11 @@
       </section>
 
       <section class="category-band" aria-label="Kategori öne çıkanları">
-        <a id="photography" href="#works" data-category-link="Photography"><span data-tr="Fotoğraf" data-en="Photography">Fotoğraf</span><i>↗</i></a>
-        <a id="collages" href="#works" data-category-link="Collages"><span data-tr="Kolajlar" data-en="Collages">Kolajlar</span><i>↗</i></a>
-        <a id="drawings" href="#works" data-category-link="Drawings"><span data-tr="Çizimler" data-en="Drawings">Çizimler</span><i>↗</i></a>
-        <a id="films" href="#works" data-category-link="Films"><span data-tr="Filmler" data-en="Films">Filmler</span><i>↗</i></a>
-        <a id="video-art" href="#works" data-category-link="Video art"><span data-tr="Video sanatı" data-en="Video art">Video sanatı</span><i>↗</i></a>
+        <a id="photography" href="photography/"><span data-tr="Fotoğraf" data-en="Photography">Fotoğraf</span><i>↗</i></a>
+        <a id="collages" href="collages/"><span data-tr="Kolajlar" data-en="Collages">Kolajlar</span><i>↗</i></a>
+        <a id="drawings" href="drawings/"><span data-tr="Çizimler" data-en="Drawings">Çizimler</span><i>↗</i></a>
+        <a id="films" href="films/"><span data-tr="Filmler" data-en="Films">Filmler</span><i>↗</i></a>
+        <a id="video-art" href="video-art/"><span data-tr="Video sanatı" data-en="Video art">Video sanatı</span><i>↗</i></a>
       </section>
 
       <section id="writing" class="section writing-section" aria-labelledby="writing-title">
@@ -70,7 +70,7 @@
       <p class="copyright">© <span id="year"></span> Beyza Yıldır</p>
     </footer>
     <template id="work-template"><article class="work-card"><a class="work-link" href="#"><div class="art"><span class="work-index"></span></div><div class="work-meta"><p class="work-category"></p><h3></h3><p class="work-year"></p></div></a></article></template>
-    <template id="post-template"><article class="post"><p class="post-date"></p><h3></h3><p class="post-summary"></p><a class="arrow-link post-link" href="#" data-tr="Oku" data-en="Read">Oku <span>↗</span></a></article></template>
+    <template id="post-template"><article class="post"><a class="post-link" href="#"><p class="post-date"></p><h3></h3><p class="post-summary"></p><span class="arrow-link" data-tr="Oku" data-en="Read">Oku <span>↗</span></span></a></article></template>
     <script src="/app.js" defer></script>
   </body>
 </html>
