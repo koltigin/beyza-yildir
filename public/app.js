@@ -24,10 +24,15 @@ function renderWorks() {
     const node = template.content.cloneNode(true);
     const art = node.querySelector(".art");
     art.classList.add(work.className);
+    if (work.cover_key) {
+      art.classList.add("has-image");
+      art.style.backgroundImage = `url(/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")})`;
+    }
     art.querySelector(".work-index").textContent = String(index + 1).padStart(2, "0");
     node.querySelector(".work-category").textContent = work.category;
     node.querySelector("h3").textContent = work[language];
     node.querySelector(".work-year").textContent = work.year;
+    node.querySelector(".work-link").href = work.id ? `/work/?id=${encodeURIComponent(work.id)}` : `/works/?category=${encodeURIComponent(work.category)}`;
     grid.append(node);
   });
 }
@@ -45,7 +50,7 @@ function renderCategories() {
 }
 function renderPosts() {
   const list = $("#posts"); const template = $("#post-template"); list.innerHTML = "";
-  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = post[`${language}Summary`]; list.append(node); });
+  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = post[`${language}Summary`]; node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/blog/"; list.append(node); });
 }
 function changeLanguage() {
   language = language === "tr" ? "en" : "tr";
@@ -71,6 +76,8 @@ async function hydratePublishedContent() {
       if (payload.works?.length) {
         works.splice(0, works.length, ...payload.works.map((item, index) => ({
           category: item.category,
+          id: item.id,
+          cover_key: item.cover_key,
           year: String(item.created_at || "").slice(0, 4),
           tr: item.title_tr,
           en: item.title_en,
@@ -84,6 +91,7 @@ async function hydratePublishedContent() {
       if (payload.posts?.length) {
         posts.splice(0, posts.length, ...payload.posts.map((item) => ({
           date: String(item.created_at || "").slice(0, 10), tr: item.title_tr, en: item.title_en,
+          id: item.id,
           trSummary: item.body_tr, enSummary: item.body_en
         })));
         renderPosts();
