@@ -2,6 +2,8 @@ interface Env {
   DB: D1Database;
   MEDIA: R2Bucket;
   PUBLIC_ORIGIN: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string;
 }
 
 const allowedCategories = new Set(["Photography", "Collages", "Drawings", "Films", "Video art"]);
@@ -20,6 +22,9 @@ function contentId() { return crypto.randomUUID(); }
 function isSafeImage(request: Request) {
   return ["image/jpeg", "image/png", "image/webp"].includes(request.headers.get("content-type") || "");
 }
+function validEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 async function readJson(request: Request) {
   try { return await request.json<Record<string, unknown>>(); } catch { return null; }
 }
@@ -27,7 +32,7 @@ async function readJson(request: Request) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS") return new Response(null, { headers: { ...publicHeaders, "access-control-allow-methods": "GET, POST, PATCH, OPTIONS", "access-control-allow-headers": "content-type, Cf-Access-Jwt-Assertion" } });
+    if (request.method === "OPTIONS") return new Response(null, { headers: { ...publicHeaders, "access-control-allow-methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS", "access-control-allow-headers": "content-type, Cf-Access-Jwt-Assertion" } });
 
     if (url.pathname === "/api/public/works" && request.method === "GET") {
       const category = url.searchParams.get("category");
@@ -49,6 +54,42 @@ export default {
       return json({ exhibitions: results });
     }
 
+    if (url.pathname === "/api/public/page/about" && request.method === "GET") {
+      const page = await env.DB.prepare("SELECT title_tr, title_en, body_tr, body_en, updated_at FROM site_pages WHERE slug = 'about'").first();
+      return page ? json({ page }) : json({ error: "Not found" }, 404);
+    }
+
+    if (url.pathname === "/api/public/awards" && request.method === "GET") {
+      const { results } = await env.DB.prepare("SELECT id, title_tr, title_en, body_tr, body_en, award_year, created_at FROM awards WHERE status = 'published' ORDER BY award_year DESC, created_at DESC").all();
+      return json({ awards: results });
+    }
+
+    if (url.pathname === "/api/contact" && request.method === "POST") {
+      const origin = request.headers.get("origin");
+      if (origin && origin !== env.PUBLIC_ORIGIN) return json({ error: "Origin not allowed" }, 403, adminHeaders);
+      const payload = await readJson(request);
+      if (!payload) return json({ error: "Invalid message" }, 400, adminHeaders);
+      if (String(payload.website || "").trim()) return json({ ok: true }, 200, adminHeaders);
+      const name = String(payload.name || "").trim();
+      const email = String(payload.email || "").trim();
+      const message = String(payload.message || "").trim();
+      if (!name || !validEmail(email) || !message || name.length > 100 || message.length > 5000) return json({ error: "Lütfen tüm alanları geçerli biçimde doldurun." }, 400, adminHeaders);
+      if (!env.RESEND_API_KEY) return json({ error: "Mesaj servisi henüz yapılandırılmadı." }, 503, adminHeaders);
+      const sent = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          from: env.RESEND_FROM || "Beyza Yıldır <contact@yildirbeyza.com>",
+          to: ["yildirbeyza@gmail.com"],
+          reply_to: email,
+          subject: `Yeni web mesajı — ${name}`,
+          text: `Ad: ${name}\nE-posta: ${email}\n\n${message}`
+        })
+      });
+      if (!sent.ok) return json({ error: "Mesaj şu anda gönderilemedi. Lütfen daha sonra tekrar deneyin." }, 502, adminHeaders);
+      return json({ ok: true }, 200, adminHeaders);
+    }
+
     const publicContentMatch = url.pathname.match(/^\/api\/public\/content\/([0-9a-f-]+)$/i);
     if (publicContentMatch && request.method === "GET") {
       const item = await env.DB.prepare("SELECT id, type, category, project_id, title_tr, title_en, body_tr, body_en, cover_key, media_json, event_start, event_end, created_at FROM content WHERE id = ? AND status = 'published'").bind(publicContentMatch[1]).first();
@@ -67,6 +108,46 @@ export default {
     if (url.pathname === "/api/admin/content" && request.method === "GET") {
       const { results } = await env.DB.prepare("SELECT * FROM content ORDER BY updated_at DESC").all();
       return json({ content: results }, 200, adminHeaders);
+    }
+
+    if (url.pathname === "/api/admin/page/about" && request.method === "GET") {
+      const page = await env.DB.prepare("SELECT title_tr, title_en, body_tr, body_en, updated_at FROM site_pages WHERE slug = 'about'").first();
+      return page ? json({ page }, 200, adminHeaders) : json({ page: null }, 200, adminHeaders);
+    }
+
+    if (url.pathname === "/api/admin/page/about" && request.method === "PUT") {
+      const payload = await readJson(request);
+      if (!payload || !String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Türkçe ve İngilizce içerik gereklidir" }, 400, adminHeaders);
+      await env.DB.prepare("INSERT INTO site_pages (slug, title_tr, title_en, body_tr, body_en, updated_at) VALUES ('about', ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(slug) DO UPDATE SET title_tr = excluded.title_tr, title_en = excluded.title_en, body_tr = excluded.body_tr, body_en = excluded.body_en, updated_at = CURRENT_TIMESTAMP")
+        .bind(String(payload.titleTr).trim(), String(payload.titleEn).trim(), String(payload.bodyTr).trim(), String(payload.bodyEn).trim()).run();
+      return json({ ok: true }, 200, adminHeaders);
+    }
+
+    if (url.pathname === "/api/admin/awards" && request.method === "GET") {
+      const { results } = await env.DB.prepare("SELECT * FROM awards ORDER BY award_year DESC, updated_at DESC").all();
+      return json({ awards: results }, 200, adminHeaders);
+    }
+
+    if (url.pathname === "/api/admin/awards" && request.method === "POST") {
+      const payload = await readJson(request);
+      if (!payload || !["draft", "published"].includes(String(payload.status)) || !String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Ödülün iki dilde başlığı ve açıklaması gereklidir" }, 400, adminHeaders);
+      const id = contentId();
+      await env.DB.prepare("INSERT INTO awards (id, status, title_tr, title_en, body_tr, body_en, award_year) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        .bind(id, String(payload.status), String(payload.titleTr).trim(), String(payload.titleEn).trim(), String(payload.bodyTr).trim(), String(payload.bodyEn).trim(), String(payload.awardYear || "").trim() || null).run();
+      return json({ id }, 201, adminHeaders);
+    }
+
+    const awardMatch = url.pathname.match(/^\/api\/admin\/awards\/([0-9a-f-]+)$/i);
+    if (awardMatch && request.method === "PATCH") {
+      const payload = await readJson(request);
+      if (!payload || !["draft", "published"].includes(String(payload.status))) return json({ error: "Invalid status" }, 400, adminHeaders);
+      const result = await env.DB.prepare("UPDATE awards SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(String(payload.status), awardMatch[1]).run();
+      return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
+    }
+
+    if (awardMatch && request.method === "DELETE") {
+      const result = await env.DB.prepare("DELETE FROM awards WHERE id = ?").bind(awardMatch[1]).run();
+      return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
     }
 
     if (url.pathname === "/api/admin/content" && request.method === "POST") {
