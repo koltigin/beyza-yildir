@@ -1,4 +1,11 @@
 (() => {
+  const renderSharedFooter = (language) => {
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+    const copy = language === "en" ? { contact: "Contact", message: "Send a message" } : { contact: "İletişim", message: "Mesaj gönder" };
+    footer.className = "site-footer";
+    footer.innerHTML = `<p class="footer-name">Beyza Yıldır</p><div><p class="eyebrow">${copy.contact}</p><a href="/contact/">${copy.message}</a></div><div class="socials" aria-label="Sosyal medya"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer">Instagram &#8599;&#65038;</a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer">Vimeo &#8599;&#65038;</a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer">YouTube &#8599;&#65038;</a></div><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
+  };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
   if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261023-mobile4");
   const toggle = document.querySelector(".page-language-toggle");
@@ -15,6 +22,7 @@
     document.querySelectorAll("[data-language]").forEach((element) => { element.hidden = element.dataset.language !== language; });
     toggle.setAttribute("aria-pressed", String(language === "en"));
     toggle.innerHTML = "TR <span>/</span> EN";
+    renderSharedFooter(language);
     document.dispatchEvent(new CustomEvent("beyza-language-change", { detail: { language } }));
   };
   toggle.addEventListener("click", () => setLanguage(language === "tr" ? "en" : "tr"));
