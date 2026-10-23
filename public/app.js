@@ -13,6 +13,11 @@ const posts = [
   { date: "02.08.2026", tr: "Stüdyoda bir gün", en: "A day in the studio", trSummary: "Yüzey, boya ve bekleme üzerine kısa bir günlük.", enSummary: "A short diary of surface, paint, and waiting." },
   { date: "16.06.2026", tr: "Kesip tekrar bakmak", en: "Cutting and looking again", trSummary: "Kolajın düşünme biçimleri hakkında.", enSummary: "On collage as a way of thinking." }
 ];
+const plainText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const excerpt = (value, limit = 118) => {
+  const text = plainText(value);
+  return text.length > limit ? `${text.slice(0, limit).trimEnd()}…` : text;
+};
 let language = localStorage.getItem("beyza-language") || "tr";
 let activeCategory = "All";
 const $ = (selector) => document.querySelector(selector);
@@ -52,7 +57,7 @@ function renderCategories() {
 }
 function renderPosts() {
   const list = $("#posts"); const template = $("#post-template"); list.innerHTML = "";
-  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = post[`${language}Summary`]; node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
+  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = excerpt(post[`${language}Summary`]); node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
 }
 function changeLanguage() {
   language = language === "tr" ? "en" : "tr";

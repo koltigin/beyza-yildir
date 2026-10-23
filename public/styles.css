@@ -18,10 +18,12 @@
 /* Mobile legibility and text-only arrows: no platform emoji substitutions. */
 .category-band a{color:var(--ink);border-color:rgba(238,233,217,.22)}
 .category-band a i,.arrow-link span{font-family:Arial,sans-serif;font-style:normal;font-variant-emoji:text}
+.arrow-link span{font-size:0;display:inline-block;position:relative;width:.95rem;height:.95rem;vertical-align:-.08rem}.arrow-link span::before{content:"";position:absolute;width:.52rem;height:.52rem;right:0;top:0;border-top:2px solid currentColor;border-right:2px solid currentColor}.arrow-link span::after{content:"";position:absolute;width:.88rem;height:2px;left:.03rem;top:.5rem;background:currentColor;transform:rotate(-45deg);transform-origin:left center}
 .category-band a:hover{background:var(--green);color:var(--ink)}
 @media(max-width:700px){
   html,body{max-width:100%;overflow-x:hidden}
   .category-band a{min-height:132px;padding:1.05rem;font-size:clamp(1.45rem,8vw,2rem);line-height:.93}
   .category-band a i{font-size:1.55rem;line-height:1}
   .site-footer{padding-bottom:calc(var(--space) + env(safe-area-inset-bottom))}
+  .post-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;min-height:0}
 }
