@@ -47,6 +47,17 @@ function renderLanguageToggle() {
   toggle.innerHTML = `<span class="${isTurkish ? "is-active" : ""}">TR</span><span class="${!isTurkish ? "is-active" : ""}">EN</span>`;
 }
 
+function renderStaticCopy() {
+  document.querySelectorAll("[data-tr][data-en]").forEach((element) => {
+    const copy = element.dataset[language];
+    if (element.matches(".arrow-link")) {
+      element.innerHTML = `${copy} <span aria-hidden="true">↗</span>`;
+    } else {
+      element.textContent = copy;
+    }
+  });
+}
+
 function renderWorks() {
   const grid = $("#works-grid");
   const template = $("#work-template");
@@ -93,7 +104,7 @@ function changeLanguage() {
 $(".language-toggle").addEventListener("click", changeLanguage);
 $(".menu-toggle").addEventListener("click", (event) => { const expanded = event.currentTarget.getAttribute("aria-expanded") === "true"; event.currentTarget.setAttribute("aria-expanded", String(!expanded)); $(".site-nav").classList.toggle("is-open", !expanded); });
 document.querySelectorAll("[data-category-link]").forEach((link) => link.addEventListener("click", () => { activeCategory = link.dataset.categoryLink; renderCategories(); renderWorks(); }));
-$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; updateLocalizedLinks(); renderLanguageToggle(); renderCategories(); renderWorks(); renderPosts();
+$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; updateLocalizedLinks(); renderLanguageToggle(); renderStaticCopy(); renderCategories(); renderWorks(); renderPosts();
 
 // In local preview this keeps the authored sample content visible. On the
 // production domain the Worker replaces it with published D1 content.
