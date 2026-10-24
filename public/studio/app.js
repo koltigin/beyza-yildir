@@ -44,9 +44,11 @@ function clearEditor() {
 }
 
 async function populateAbout() {
-  const response = await fetch("/api/admin/page/about");
+  const response = await fetch("/api/admin/page/about", { credentials: "same-origin", headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(response.status === 401 ? "Hakkında metni yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "Hakkında metni yüklenemedi.");
-  const { page } = await response.json();
+  let payload;
+  try { payload = await response.json(); } catch { throw new Error("Hakkında metni beklenmeyen bir Access giriş sayfası döndürdü. Studio oturumunu yenileyin."); }
+  const { page } = payload;
   if (!page) return;
   form.elements.titleTr.value = page.title_tr;
   form.elements.titleEn.value = page.title_en;
@@ -118,14 +120,14 @@ function renderManagedContent(content) {
 
 async function loadPublishedContent() {
   try {
-    const [contentResponse, awardsResponse] = await Promise.all([fetch("/api/admin/content"), fetch("/api/admin/awards")]);
+    const [contentResponse, awardsResponse] = await Promise.all([fetch("/api/admin/content", { credentials: "same-origin", headers: { accept: "application/json" } }), fetch("/api/admin/awards", { credentials: "same-origin", headers: { accept: "application/json" } })]);
     if (!contentResponse.ok || !awardsResponse.ok) {
       notify(contentResponse.status === 401 || awardsResponse.status === 401 ? "İçerikler yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "İçerikler yüklenemedi. Lütfen sayfayı yenileyin.");
       return;
     }
     const [{ content }, { awards }] = await Promise.all([contentResponse.json(), awardsResponse.json()]);
     renderManagedContent([...(content || []), ...(awards || []).map((award) => ({ ...award, type: "award" }))]);
-  } catch (_) { /* Studio remains usable while offline. */ }
+  } catch (_) { notify("İçerikler okunamadı: Access oturumunu yenileyin. Sorun sürerse Access politikasında oturum açtığınız e-postayı kontrol edin."); }
 }
 
 async function optimiseImage(file) {

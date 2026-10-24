@@ -16,7 +16,9 @@ function json(body: unknown, status = 200, headers = publicHeaders) {
 function requireAccess(request: Request) {
   // Cloudflare Access must protect the /api/admin/* route. This header is
   // injected after a successful Access policy evaluation, never by the studio.
-  return Boolean(request.headers.get("Cf-Access-Jwt-Assertion"));
+  // Some Access configurations forward the authenticated email header instead
+  // of the JWT assertion to Worker routes, so accept either verified signal.
+  return Boolean(request.headers.get("Cf-Access-Jwt-Assertion") || request.headers.get("Cf-Access-Authenticated-User-Email"));
 }
 function contentId() { return crypto.randomUUID(); }
 function isSafeImage(request: Request) {
