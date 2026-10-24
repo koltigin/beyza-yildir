@@ -1,6 +1,17 @@
 const form = document.querySelector("#contact-form");
 const footer = document.querySelector("footer");
 const status = document.querySelector("#form-status");
+const locale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1] || "tr";
+const copy = locale === "en" ? {
+  menu: "Menu", home: "Home", contact: "Contact", intro: "Leave a message for a project, exhibition, collaboration or simply a note.", name: "Your name", email: "Your email", message: "Your message", send: "Send message ↗", ready: "Your message will be sent directly to Beyza.", sending: "Sending…", sent: "Thank you — your message has been sent to Beyza.", failed: "Message could not be sent. Please try again."
+} : { menu: "Menü", home: "Ana sayfa", contact: "İletişim", intro: "Bir proje, sergi, iş birliği ya da sadece bir not için mesaj bırak.", name: "Adın", email: "E-posta adresin", message: "Mesajın", send: "Mesaj gönder ↗", ready: "Mesajın doğrudan Beyza’ya iletilir.", sending: "Gönderiliyor…", sent: "Teşekkürler — mesajın Beyza’ya iletildi.", failed: "Mesaj gönderilemedi. Lütfen tekrar dene." };
+document.documentElement.lang = locale;
+document.querySelector(".contact h1").innerHTML = locale === "en" ? "Say<br />hello<em>.</em>" : "Merhaba<br />de<em>.</em>";
+document.querySelector(".contact-intro").textContent = copy.intro;
+const labels = form.querySelectorAll("label");
+labels[0].childNodes[0].textContent = `${copy.name} `; labels[1].childNodes[0].textContent = `${copy.email} `; labels[2].childNodes[0].textContent = `${copy.message} `;
+form.querySelector("button[type=submit]").textContent = copy.send;
+status.textContent = copy.ready;
 const footerMarkup = `<p class="footer-name">Beyza Yıldır</p><a class="footer-contact" href="/contact/">İletişim</a><nav class="social-icons" aria-label="Sosyal medya"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" class="social-fill"/></svg></a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer" aria-label="Vimeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c2.2-2.6 4.8-3.9 6.5-3.9 2 0 2.4 1.5 3 4.7.7 3.8 1.1 5.3 1.7 5.3.7 0 2.1-1.7 4.4-5.1 1.1-1.7-.1-2.5-2.3-1.7.9-3.1 2.7-4.6 5-4.6 2.2 0 2.7 1.5 1.6 4.3-2.5 5.8-7.5 12.4-10.7 12.4-2.4 0-3.4-2-4.3-5.8C7 10.6 6.6 9.3 5.9 9.3c-.6 0-1.6.7-2.9 1.9Z"/></svg></a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="m10 9 5 3-5 3Z" class="social-fill"/></svg></a></nav><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
 
 const header = document.querySelector(".bar");
@@ -9,14 +20,14 @@ if (header && back) {
   const menuToggle = document.createElement("button");
   menuToggle.type = "button";
   menuToggle.className = "page-menu-toggle";
-  menuToggle.textContent = "Menü";
+  menuToggle.textContent = copy.menu;
   menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.setAttribute("aria-controls", "page-menu");
   const pageMenu = document.createElement("nav");
   pageMenu.id = "page-menu";
   pageMenu.className = "page-menu";
   pageMenu.setAttribute("aria-label", "Site navigation");
-  pageMenu.innerHTML = '<a href="/">Ana sayfa</a><a href="/about/">Hakkında</a><a href="/#works">Çalışmalar</a><a href="/blog/">Blog</a><a href="/exhibitions/">Sergiler</a><a href="/awards/">Ödüller</a><a href="/contact/">İletişim</a>';
+  pageMenu.innerHTML = `<a href="/${locale}/">${copy.home}</a><a href="/${locale}/about/">${locale === "en" ? "About" : "Hakkında"}</a><a href="/${locale}/#works">${locale === "en" ? "Works" : "Çalışmalar"}</a><a href="/${locale}/blog/">Blog</a><a href="/${locale}/exhibitions/">${locale === "en" ? "Exhibitions" : "Sergiler"}</a><a href="/${locale}/awards/">${locale === "en" ? "Awards" : "Ödüller"}</a><a href="/${locale}/contact/">${copy.contact}</a>`;
   back.replaceWith(menuToggle);
   header.after(pageMenu);
   menuToggle.addEventListener("click", () => {
@@ -25,6 +36,15 @@ if (header && back) {
     pageMenu.classList.toggle("is-open", !open);
   });
 }
+
+const languageToggle = document.querySelector(".page-language-toggle");
+languageToggle.innerHTML = `<span class="${locale === "tr" ? "is-active" : ""}">TR</span><span class="${locale === "en" ? "is-active" : ""}">EN</span>`;
+languageToggle.addEventListener("click", () => {
+  const next = locale === "tr" ? "en" : "tr";
+  localStorage.setItem("beyza-language", next);
+  const currentPath = location.pathname.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
+  location.assign(`/${next}${currentPath}${location.search}${location.hash}`);
+});
 
 if (footer) {
   footer.className = "site-footer";
@@ -36,7 +56,7 @@ form.addEventListener("submit", async (event) => {
   const data = new FormData(form);
   const button = form.querySelector("button[type=submit]");
   button.disabled = true;
-  status.textContent = "Gönderiliyor…";
+  status.textContent = copy.sending;
   try {
     const response = await fetch("/api/contact", {
       method: "POST",
@@ -46,9 +66,9 @@ form.addEventListener("submit", async (event) => {
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || "Mesaj gönderilemedi.");
     form.reset();
-    status.textContent = "Teşekkürler — mesajın Beyza’ya iletildi.";
+    status.textContent = copy.sent;
   } catch (error) {
-    status.textContent = error.message || "Mesaj gönderilemedi. Lütfen tekrar dene.";
+    status.textContent = error.message || copy.failed;
   } finally {
     button.disabled = false;
   }

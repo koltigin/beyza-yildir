@@ -1,5 +1,7 @@
 const languageButton = document.querySelector(".page-language-toggle");
-let language = localStorage.getItem("beyza-language") || "tr";
+const urlLocale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1];
+let language = urlLocale || localStorage.getItem("beyza-language") || "tr";
+const localizedPath = (path, locale = language) => `/${locale}${path.startsWith("/") ? path : `/${path}`}`;
 
 const actions = document.querySelector(".page-actions");
 const back = actions?.querySelector(".back");
@@ -41,11 +43,12 @@ function renderLanguage({ scroll = false } = {}) {
   document.querySelectorAll(".bilingual-about section").forEach((section) => { section.hidden = section.lang !== language; });
   languageButton.setAttribute("aria-label", language === "tr" ? "Aktif dil Türkçe. İngilizceye geç." : "Current language English. Switch to Turkish.");
   languageButton.innerHTML = `<span class="${language === "tr" ? "is-active" : ""}">TR</span><span class="${language === "en" ? "is-active" : ""}">EN</span>`;
+  document.querySelectorAll(".page-menu a").forEach((link) => { link.href = localizedPath(new URL(link.href).pathname); });
   renderSharedFooter();
   if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-languageButton.addEventListener("click", () => { language = language === "tr" ? "en" : "tr"; localStorage.setItem("beyza-language", language); renderLanguage({ scroll: true }); });
+languageButton.addEventListener("click", () => { const nextLanguage = language === "tr" ? "en" : "tr"; localStorage.setItem("beyza-language", nextLanguage); const currentPath = location.pathname.replace(/^\/(tr|en)(?=\/|$)/, "") || "/"; location.assign(`/${nextLanguage}${currentPath}${location.search}${location.hash}`); });
 fetch("/api/public/page/about").then((response) => response.ok ? response.json() : Promise.reject()).then(({ page }) => {
   document.querySelector("#about-tr").innerHTML = page.body_tr;
   document.querySelector("#about-en").innerHTML = page.body_en;

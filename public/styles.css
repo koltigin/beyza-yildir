@@ -59,3 +59,4 @@
 .language-toggle span{display:grid;place-items:center;min-width:2.35rem;padding:0 .55rem;color:#0a0b08}
 .language-toggle span.is-active{background:#11130e;color:var(--ink)}
 @media(max-width:700px){.site-header .language-toggle{padding:0;min-height:2.25rem}.site-header .language-toggle span{min-width:2.15rem;padding:0 .45rem}}
+@media(max-width:700px){.site-header .language-toggle{display:grid;width:auto;grid-template-columns:repeat(2,1fr)}}

@@ -45,7 +45,7 @@ function clearEditor() {
 
 async function populateAbout() {
   const response = await fetch("/api/admin/page/about");
-  if (!response.ok) throw new Error("Hakkında metni yüklenemedi.");
+  if (!response.ok) throw new Error(response.status === 401 ? "Hakkında metni yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "Hakkında metni yüklenemedi.");
   const { page } = await response.json();
   if (!page) return;
   form.elements.titleTr.value = page.title_tr;
@@ -119,7 +119,10 @@ function renderManagedContent(content) {
 async function loadPublishedContent() {
   try {
     const [contentResponse, awardsResponse] = await Promise.all([fetch("/api/admin/content"), fetch("/api/admin/awards")]);
-    if (!contentResponse.ok || !awardsResponse.ok) return;
+    if (!contentResponse.ok || !awardsResponse.ok) {
+      notify(contentResponse.status === 401 || awardsResponse.status === 401 ? "İçerikler yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "İçerikler yüklenemedi. Lütfen sayfayı yenileyin.");
+      return;
+    }
     const [{ content }, { awards }] = await Promise.all([contentResponse.json(), awardsResponse.json()]);
     renderManagedContent([...(content || []), ...(awards || []).map((award) => ({ ...award, type: "award" }))]);
   } catch (_) { /* Studio remains usable while offline. */ }

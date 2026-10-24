@@ -9,6 +9,8 @@ routes = [
   { pattern = "yildirbeyza.com/p/*", zone_name = "yildirbeyza.com" },
   { pattern = "yildirbeyza.com/w/*", zone_name = "yildirbeyza.com" },
   { pattern = "yildirbeyza.com/e/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/tr/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/en/*", zone_name = "yildirbeyza.com" },
   { pattern = "yildirbeyza.com/sitemap-content.xml", zone_name = "yildirbeyza.com" }
 ]
 

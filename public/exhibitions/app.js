@@ -1,5 +1,6 @@
 const list = document.querySelector(".list");
 let exhibitions = [];
+const localePrefix = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1] || "tr";
 
 const escapeHtml = (value) => String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
 const plainText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -18,7 +19,7 @@ function render() {
     const dates = end ? `${start} — ${end}` : start;
     const title = language === "tr" ? event.title_tr : event.title_en;
     const summary = plainText(language === "tr" ? event.body_tr : event.body_en);
-    return `<a class="entry" href="../e/${encodeURIComponent(event.id)}"><time>${escapeHtml(dates)}</time><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(summary)}</p></div></a>`;
+    return `<a class="entry" href="/${localePrefix}/e/${encodeURIComponent(event.id)}"><time>${escapeHtml(dates)}</time><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(summary)}</p></div></a>`;
   }).join("");
 }
 

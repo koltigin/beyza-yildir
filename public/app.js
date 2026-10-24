@@ -18,9 +18,26 @@ const excerpt = (value, limit = 118) => {
   const text = plainText(value);
   return text.length > limit ? `${text.slice(0, limit).trimEnd()}…` : text;
 };
-let language = localStorage.getItem("beyza-language") || "tr";
+const urlLocale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1];
+let language = urlLocale || localStorage.getItem("beyza-language") || "tr";
 let activeCategory = "All";
 const $ = (selector) => document.querySelector(selector);
+
+function localizedPath(path, locale = language) {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `/${locale}${cleanPath}`;
+}
+
+function updateLocalizedLinks() {
+  document.querySelectorAll(".site-nav a").forEach((link) => {
+    const destination = new URL(link.href).pathname;
+    link.href = localizedPath(destination);
+  });
+  ["photography", "collages", "drawings", "films", "video-art"].forEach((id) => {
+    const link = document.getElementById(id);
+    if (link) link.href = localizedPath(`/${id}/`);
+  });
+}
 
 function renderLanguageToggle() {
   const toggle = $(".language-toggle");
@@ -47,7 +64,7 @@ function renderWorks() {
     node.querySelector("h3").textContent = work[language];
     node.querySelector(".work-year").textContent = work.year;
     const categoryPath = { Photography: "photography", Collages: "collages", Drawings: "drawings", Films: "films", "Video art": "video-art" }[work.category];
-    node.querySelector(".work-link").href = work.id ? `/w/${encodeURIComponent(work.id)}` : `/${categoryPath}/`;
+    node.querySelector(".work-link").href = work.id ? localizedPath(`/w/${encodeURIComponent(work.id)}`) : localizedPath(`/${categoryPath}/`);
     grid.append(node);
   });
 }
@@ -65,20 +82,18 @@ function renderCategories() {
 }
 function renderPosts() {
   const list = $("#posts"); const template = $("#post-template"); list.innerHTML = "";
-  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = excerpt(post[`${language}Summary`]); node.querySelector(".post-link").href = post.id ? `/p/${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
+  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = excerpt(post[`${language}Summary`]); node.querySelector(".post-link").href = post.id ? localizedPath(`/p/${encodeURIComponent(post.id)}`) : localizedPath("/post/"); list.append(node); });
 }
 function changeLanguage() {
-  language = language === "tr" ? "en" : "tr";
-  localStorage.setItem("beyza-language", language);
-  document.documentElement.lang = language;
-  document.querySelectorAll("[data-tr][data-en]").forEach((el) => { el.textContent = el.dataset[language]; });
-  renderLanguageToggle();
-  renderCategories(); renderWorks(); renderPosts();
+  const nextLanguage = language === "tr" ? "en" : "tr";
+  localStorage.setItem("beyza-language", nextLanguage);
+  const currentPath = location.pathname.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
+  location.assign(`/${nextLanguage}${currentPath}${location.search}${location.hash}`);
 }
 $(".language-toggle").addEventListener("click", changeLanguage);
 $(".menu-toggle").addEventListener("click", (event) => { const expanded = event.currentTarget.getAttribute("aria-expanded") === "true"; event.currentTarget.setAttribute("aria-expanded", String(!expanded)); $(".site-nav").classList.toggle("is-open", !expanded); });
 document.querySelectorAll("[data-category-link]").forEach((link) => link.addEventListener("click", () => { activeCategory = link.dataset.categoryLink; renderCategories(); renderWorks(); }));
-$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; renderLanguageToggle(); renderCategories(); renderWorks(); renderPosts();
+$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; updateLocalizedLinks(); renderLanguageToggle(); renderCategories(); renderWorks(); renderPosts();
 
 // In local preview this keeps the authored sample content visible. On the
 // production domain the Worker replaces it with published D1 content.

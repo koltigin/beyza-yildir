@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social);
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-page-menu");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-locales");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -36,7 +36,15 @@
       pageMenu.classList.toggle("is-open", !open);
     });
   }
-  let language = localStorage.getItem("beyza-language") || "tr";
+  const urlLocale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1];
+  let language = urlLocale || localStorage.getItem("beyza-language") || "tr";
+  const localizedPath = (path, locale = language) => `/${locale}${path.startsWith("/") ? path : `/${path}`}`;
+  const updateLocalizedLinks = () => {
+    document.querySelectorAll(".page-menu a").forEach((link) => {
+      const destination = new URL(link.href).pathname;
+      link.href = localizedPath(destination);
+    });
+  };
   const setLanguage = (next) => {
     language = next;
     localStorage.setItem("beyza-language", language);
@@ -49,10 +57,16 @@
     toggle.setAttribute("aria-pressed", String(language === "en"));
     toggle.setAttribute("aria-label", language === "tr" ? "Aktif dil Türkçe. İngilizceye geç." : "Current language English. Switch to Turkish.");
     toggle.innerHTML = `<span class="${language === "tr" ? "is-active" : ""}">TR</span><span class="${language === "en" ? "is-active" : ""}">EN</span>`;
+    updateLocalizedLinks();
     renderSharedFooter(language);
     document.dispatchEvent(new CustomEvent("beyza-language-change", { detail: { language } }));
   };
-  toggle.addEventListener("click", () => setLanguage(language === "tr" ? "en" : "tr"));
+  toggle.addEventListener("click", () => {
+    const nextLanguage = language === "tr" ? "en" : "tr";
+    localStorage.setItem("beyza-language", nextLanguage);
+    const currentPath = location.pathname.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
+    location.assign(`/${nextLanguage}${currentPath}${location.search}${location.hash}`);
+  });
   document.addEventListener("beyza-content-ready", () => setLanguage(language));
   setLanguage(language);
 
@@ -68,7 +82,7 @@
         list.innerHTML = `<p class="archive-empty">${language === "tr" ? "Henüz yayınlanmış yazı yok." : "There are no published posts yet."}</p>`;
         return;
       }
-      list.innerHTML = posts.map((post) => { const copy = plainText(language === "tr" ? post.body_tr : post.body_en); const summary = copy.length > 118 ? `${copy.slice(0, 118).trimEnd()}…` : copy; return `<a class="entry" href="../p/${encodeURIComponent(post.id)}"><time>${escapeHtml(String(post.created_at || "").slice(0, 10))}</time><div><h2>${escapeHtml(language === "tr" ? post.title_tr : post.title_en)}</h2><p>${escapeHtml(summary)}</p></div></a>`; }).join("");
+      list.innerHTML = posts.map((post) => { const copy = plainText(language === "tr" ? post.body_tr : post.body_en); const summary = copy.length > 118 ? `${copy.slice(0, 118).trimEnd()}…` : copy; return `<a class="entry" href="${localizedPath(`/p/${encodeURIComponent(post.id)}`)}"><time>${escapeHtml(String(post.created_at || "").slice(0, 10))}</time><div><h2>${escapeHtml(language === "tr" ? post.title_tr : post.title_en)}</h2><p>${escapeHtml(summary)}</p></div></a>`; }).join("");
     };
     fetch("/api/public/posts").then((response) => response.ok ? response.json() : Promise.reject()).then((payload) => { posts = Array.isArray(payload.posts) ? payload.posts : []; renderPosts(); }).catch(() => {});
     document.addEventListener("beyza-language-change", renderPosts);
