@@ -22,6 +22,14 @@ let language = localStorage.getItem("beyza-language") || "tr";
 let activeCategory = "All";
 const $ = (selector) => document.querySelector(selector);
 
+function renderLanguageToggle() {
+  const toggle = $(".language-toggle");
+  const isTurkish = language === "tr";
+  toggle.setAttribute("aria-pressed", String(!isTurkish));
+  toggle.setAttribute("aria-label", isTurkish ? "Aktif dil Türkçe. İngilizceye geç." : "Current language English. Switch to Turkish.");
+  toggle.innerHTML = `<span class="${isTurkish ? "is-active" : ""}">TR</span><span class="${!isTurkish ? "is-active" : ""}">EN</span>`;
+}
+
 function renderWorks() {
   const grid = $("#works-grid");
   const template = $("#work-template");
@@ -64,13 +72,13 @@ function changeLanguage() {
   localStorage.setItem("beyza-language", language);
   document.documentElement.lang = language;
   document.querySelectorAll("[data-tr][data-en]").forEach((el) => { el.textContent = el.dataset[language]; });
-  $(".language-toggle").innerHTML = language === "tr" ? "TR <span>/</span> EN" : "TR <span>/</span> EN";
+  renderLanguageToggle();
   renderCategories(); renderWorks(); renderPosts();
 }
 $(".language-toggle").addEventListener("click", changeLanguage);
 $(".menu-toggle").addEventListener("click", (event) => { const expanded = event.currentTarget.getAttribute("aria-expanded") === "true"; event.currentTarget.setAttribute("aria-expanded", String(!expanded)); $(".site-nav").classList.toggle("is-open", !expanded); });
 document.querySelectorAll("[data-category-link]").forEach((link) => link.addEventListener("click", () => { activeCategory = link.dataset.categoryLink; renderCategories(); renderWorks(); }));
-$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; renderCategories(); renderWorks(); renderPosts();
+$("#year").textContent = new Date().getFullYear(); document.documentElement.lang = language; renderLanguageToggle(); renderCategories(); renderWorks(); renderPosts();
 
 // In local preview this keeps the authored sample content visible. On the
 // production domain the Worker replaces it with published D1 content.

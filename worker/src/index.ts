@@ -140,8 +140,17 @@ export default {
     const awardMatch = url.pathname.match(/^\/api\/admin\/awards\/([0-9a-f-]+)$/i);
     if (awardMatch && request.method === "PATCH") {
       const payload = await readJson(request);
-      if (!payload || !["draft", "published"].includes(String(payload.status))) return json({ error: "Invalid status" }, 400, adminHeaders);
-      const result = await env.DB.prepare("UPDATE awards SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(String(payload.status), awardMatch[1]).run();
+      if (!payload) return json({ error: "Invalid update" }, 400, adminHeaders);
+      const existing = await env.DB.prepare("SELECT * FROM awards WHERE id = ?").bind(awardMatch[1]).first<Record<string, unknown>>();
+      if (!existing) return json({ error: "Not found" }, 404, adminHeaders);
+      const status = payload.status ?? existing.status;
+      const titleTr = String(payload.titleTr ?? existing.title_tr).trim();
+      const titleEn = String(payload.titleEn ?? existing.title_en).trim();
+      const bodyTr = String(payload.bodyTr ?? existing.body_tr).trim();
+      const bodyEn = String(payload.bodyEn ?? existing.body_en).trim();
+      if (!["draft", "published"].includes(String(status)) || !titleTr || !titleEn || !bodyTr || !bodyEn) return json({ error: "Invalid award update" }, 400, adminHeaders);
+      const result = await env.DB.prepare("UPDATE awards SET status = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, award_year = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(String(status), titleTr, titleEn, bodyTr, bodyEn, String((payload.awardYear ?? existing.award_year) || "").trim() || null, awardMatch[1]).run();
       return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
     }
 
@@ -173,8 +182,15 @@ export default {
       if (!["draft", "published"].includes(String(status))) return json({ error: "Invalid status" }, 400, adminHeaders);
       const category = payload.category ?? existing.category;
       if (existing.type === "work" && !allowedCategories.has(String(category))) return json({ error: "Invalid category" }, 400, adminHeaders);
-      const result = await env.DB.prepare("UPDATE content SET status = ?, category = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-        .bind(status, category, payload.titleTr ?? existing.title_tr, payload.titleEn ?? existing.title_en, payload.bodyTr ?? existing.body_tr, payload.bodyEn ?? existing.body_en, contentMatch[1]).run();
+      const titleTr = String(payload.titleTr ?? existing.title_tr).trim();
+      const titleEn = String(payload.titleEn ?? existing.title_en).trim();
+      const bodyTr = String(payload.bodyTr ?? existing.body_tr).trim();
+      const bodyEn = String(payload.bodyEn ?? existing.body_en).trim();
+      if (!titleTr || !titleEn || !bodyTr || !bodyEn) return json({ error: "Both Turkish and English content are required" }, 400, adminHeaders);
+      const media = Array.isArray(payload.media) ? payload.media : JSON.parse(String(existing.media_json || "[]"));
+      const coverKey = Array.isArray(payload.media) ? (String(payload.coverKey || media[0]?.key || "") || null) : existing.cover_key;
+      const result = await env.DB.prepare("UPDATE content SET status = ?, category = ?, project_id = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, cover_key = ?, media_json = ?, event_start = ?, event_end = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(status, category, payload.projectId ?? existing.project_id, titleTr, titleEn, bodyTr, bodyEn, coverKey, JSON.stringify(media), payload.eventStart ?? existing.event_start, payload.eventEnd ?? existing.event_end, contentMatch[1]).run();
       return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
     }
 

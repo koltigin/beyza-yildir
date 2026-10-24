@@ -13,6 +13,8 @@ const categoryField = document.querySelector("#category-field");
 const projectField = document.querySelector("#project-field");
 const eventFields = document.querySelector("#event-fields");
 let currentType = "work";
+let editingItem = null;
+let managedItems = new Map();
 
 const actions = document.querySelector(".actions");
 actions.insertAdjacentHTML("beforeend", '<button type="button" data-type="award"><span>04</span>Yeni ödül <b>↗</b></button><button type="button" data-type="about"><span>05</span>Hakkında sayfasını düzenle <b>↗</b></button>');
@@ -52,8 +54,9 @@ async function populateAbout() {
   editorContent("En").innerHTML = page.body_en;
 }
 
-async function openEditor(type) {
+async function openEditor(type, item = null) {
   currentType = type;
+  editingItem = item;
   const details = contentTypes[currentType];
   editor.hidden = false;
   document.querySelector("#editor-label").textContent = details.label;
@@ -69,6 +72,21 @@ async function openEditor(type) {
     form.elements.titleTr.value = "Beyza Yıldır";
     form.elements.titleEn.value = "Beyza Yıldır";
     await populateAbout();
+  } else if (item) {
+    form.elements.titleTr.value = item.title_tr || "";
+    form.elements.titleEn.value = item.title_en || "";
+    editorContent("Tr").innerHTML = item.body_tr || "";
+    editorContent("En").innerHTML = item.body_en || "";
+    if (currentType === "work") {
+      document.querySelector("#category").value = item.category || "Photography";
+      form.elements.projectId.value = item.project_id || "";
+    }
+    if (currentType === "exhibition") {
+      form.elements.eventStart.value = item.event_start || "";
+      form.elements.eventEnd.value = item.event_end || "";
+    }
+    if (currentType === "award") form.elements.awardYear.value = item.award_year || "";
+    document.querySelector("#editor-label").textContent = `${details.label} — düzenle`;
   }
   editor.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -78,10 +96,15 @@ document.querySelector("#close-editor").addEventListener("click", () => { editor
 
 function renderManagedContent(content) {
   const target = document.querySelector("#content-items");
+  managedItems = new Map(content.map((item) => [item.id, item]));
   target.innerHTML = content.length ? content.map((item) => {
     const resource = item.type === "award" ? "awards" : "content";
-    return `<article><p>${item.status === "published" ? "yayında" : "taslak"} · ${contentTypes[item.type]?.label || escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-toggle-id="${item.id}" data-resource="${resource}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Taslağa al" : "Yayınla"}</button><button data-delete-id="${item.id}" data-resource="${resource}">Sil</button></article>`;
+    return `<article><p>${item.status === "published" ? "yayında" : "taslak"} · ${contentTypes[item.type]?.label || escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-edit-id="${item.id}">Düzenle</button><button data-toggle-id="${item.id}" data-resource="${resource}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Taslağa al" : "Yayınla"}</button><button data-delete-id="${item.id}" data-resource="${resource}">Sil</button></article>`;
   }).join("") : '<p class="empty">Eklediğin eserler, blog yazıları, ödüller ve sergi duyuruları burada görünecek.</p>';
+  target.querySelectorAll("[data-edit-id]").forEach((button) => button.addEventListener("click", () => {
+    const item = managedItems.get(button.dataset.editId);
+    if (item) openEditor(item.type, item).catch((error) => notify(error.message));
+  }));
   target.querySelectorAll("[data-toggle-id]").forEach((button) => button.addEventListener("click", async () => {
     await fetch(`/api/admin/${button.dataset.resource}/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) });
     loadPublishedContent();
@@ -131,7 +154,7 @@ async function submit(status) {
     return;
   }
   if (currentType === "award") {
-    const response = await fetch("/api/admin/awards", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...common, awardYear: data.get("awardYear") }) });
+    const response = await fetch(editingItem ? `/api/admin/awards/${editingItem.id}` : "/api/admin/awards", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...common, awardYear: data.get("awardYear") }) });
     if (!response.ok) throw new Error("Ödül kaydedilemedi.");
     return;
   }
@@ -142,7 +165,8 @@ async function submit(status) {
     if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
     return uploaded.json();
   }));
-  const response = await fetch("/api/admin/content", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, media }) });
+  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media } : {}) };
+  const response = await fetch(editingItem ? `/api/admin/content/${editingItem.id}` : "/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
 
