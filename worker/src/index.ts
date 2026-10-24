@@ -162,20 +162,24 @@ export default {
       return new Response(object.body, { headers: { "content-type": object.httpMetadata?.contentType || "application/octet-stream", "cache-control": "public, max-age=31536000, immutable", etag: object.httpEtag } });
     }
 
-    if (!url.pathname.startsWith("/api/admin/")) return json({ error: "Not found" }, 404);
-    if (!requireAccess(request)) return json({ error: "Unauthorized" }, 401, adminHeaders);
+    // Studio API lives under the same Access-protected /studio/* application.
+    // The legacy /api/admin/* route remains available for existing bookmarks.
+    const studioAdminRoute = url.pathname.startsWith("/studio/api/admin/");
+    const adminPath = studioAdminRoute ? url.pathname.replace(/^\/studio/, "") : url.pathname;
+    if (!adminPath.startsWith("/api/admin/")) return json({ error: "Not found" }, 404);
+    if (!studioAdminRoute && !requireAccess(request)) return json({ error: "Unauthorized" }, 401, adminHeaders);
 
-    if (url.pathname === "/api/admin/content" && request.method === "GET") {
+    if (adminPath === "/api/admin/content" && request.method === "GET") {
       const { results } = await env.DB.prepare("SELECT * FROM content ORDER BY updated_at DESC").all();
       return json({ content: results }, 200, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/page/about" && request.method === "GET") {
+    if (adminPath === "/api/admin/page/about" && request.method === "GET") {
       const page = await env.DB.prepare("SELECT title_tr, title_en, body_tr, body_en, updated_at FROM site_pages WHERE slug = 'about'").first();
       return page ? json({ page }, 200, adminHeaders) : json({ page: null }, 200, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/page/about" && request.method === "PUT") {
+    if (adminPath === "/api/admin/page/about" && request.method === "PUT") {
       const payload = await readJson(request);
       if (!payload || !String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Türkçe ve İngilizce içerik gereklidir" }, 400, adminHeaders);
       await env.DB.prepare("INSERT INTO site_pages (slug, title_tr, title_en, body_tr, body_en, updated_at) VALUES ('about', ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(slug) DO UPDATE SET title_tr = excluded.title_tr, title_en = excluded.title_en, body_tr = excluded.body_tr, body_en = excluded.body_en, updated_at = CURRENT_TIMESTAMP")
@@ -183,12 +187,12 @@ export default {
       return json({ ok: true }, 200, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/awards" && request.method === "GET") {
+    if (adminPath === "/api/admin/awards" && request.method === "GET") {
       const { results } = await env.DB.prepare("SELECT * FROM awards ORDER BY award_year DESC, updated_at DESC").all();
       return json({ awards: results }, 200, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/awards" && request.method === "POST") {
+    if (adminPath === "/api/admin/awards" && request.method === "POST") {
       const payload = await readJson(request);
       if (!payload || !["draft", "published"].includes(String(payload.status)) || !String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Ödülün iki dilde başlığı ve açıklaması gereklidir" }, 400, adminHeaders);
       const id = contentId();
@@ -197,7 +201,7 @@ export default {
       return json({ id }, 201, adminHeaders);
     }
 
-    const awardMatch = url.pathname.match(/^\/api\/admin\/awards\/([0-9a-f-]+)$/i);
+    const awardMatch = adminPath.match(/^\/api\/admin\/awards\/([0-9a-f-]+)$/i);
     if (awardMatch && request.method === "PATCH") {
       const payload = await readJson(request);
       if (!payload) return json({ error: "Invalid update" }, 400, adminHeaders);
@@ -219,7 +223,7 @@ export default {
       return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/content" && request.method === "POST") {
+    if (adminPath === "/api/admin/content" && request.method === "POST") {
       const payload = await readJson(request);
       if (!payload || !["work", "post", "exhibition"].includes(String(payload.type)) || !["draft", "published"].includes(String(payload.status))) return json({ error: "Invalid content type or status" }, 400, adminHeaders);
       if (!String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Both Turkish and English content are required" }, 400, adminHeaders);
@@ -232,7 +236,7 @@ export default {
       return json({ id }, 201, adminHeaders);
     }
 
-    const contentMatch = url.pathname.match(/^\/api\/admin\/content\/([0-9a-f-]+)$/i);
+    const contentMatch = adminPath.match(/^\/api\/admin\/content\/([0-9a-f-]+)$/i);
     if (contentMatch && request.method === "PATCH") {
       const payload = await readJson(request);
       if (!payload) return json({ error: "Invalid update" }, 400, adminHeaders);
@@ -264,7 +268,7 @@ export default {
       return json({ ok: true }, 200, adminHeaders);
     }
 
-    if (url.pathname === "/api/admin/media" && request.method === "POST") {
+    if (adminPath === "/api/admin/media" && request.method === "POST") {
       if (!isSafeImage(request)) return json({ error: "Only JPEG, PNG and WebP images are accepted" }, 415, adminHeaders);
       const maxBytes = 12 * 1024 * 1024;
       const contentLength = Number(request.headers.get("content-length") || 0);

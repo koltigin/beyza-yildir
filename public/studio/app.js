@@ -44,7 +44,7 @@ function clearEditor() {
 }
 
 async function populateAbout() {
-  const response = await fetch("/api/admin/page/about", { credentials: "same-origin", headers: { accept: "application/json" } });
+  const response = await fetch("/studio/api/admin/page/about", { credentials: "same-origin", headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(response.status === 401 ? "Hakkında metni yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "Hakkında metni yüklenemedi.");
   let payload;
   try { payload = await response.json(); } catch { throw new Error("Hakkında metni beklenmeyen bir Access giriş sayfası döndürdü. Studio oturumunu yenileyin."); }
@@ -108,19 +108,19 @@ function renderManagedContent(content) {
     if (item) openEditor(item.type, item).catch((error) => notify(error.message));
   }));
   target.querySelectorAll("[data-toggle-id]").forEach((button) => button.addEventListener("click", async () => {
-    await fetch(`/api/admin/${button.dataset.resource}/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) });
+    await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) });
     loadPublishedContent();
   }));
   target.querySelectorAll("[data-delete-id]").forEach((button) => button.addEventListener("click", async () => {
     if (!confirm("Bu içerik silinsin mi?")) return;
-    await fetch(`/api/admin/${button.dataset.resource}/${button.dataset.deleteId}`, { method: "DELETE" });
+    await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.deleteId}`, { method: "DELETE" });
     loadPublishedContent();
   }));
 }
 
 async function loadPublishedContent() {
   try {
-    const [contentResponse, awardsResponse] = await Promise.all([fetch("/api/admin/content", { credentials: "same-origin", headers: { accept: "application/json" } }), fetch("/api/admin/awards", { credentials: "same-origin", headers: { accept: "application/json" } })]);
+    const [contentResponse, awardsResponse] = await Promise.all([fetch("/studio/api/admin/content", { credentials: "same-origin", headers: { accept: "application/json" } }), fetch("/studio/api/admin/awards", { credentials: "same-origin", headers: { accept: "application/json" } })]);
     if (!contentResponse.ok || !awardsResponse.ok) {
       notify(contentResponse.status === 401 || awardsResponse.status === 401 ? "İçerikler yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "İçerikler yüklenemedi. Lütfen sayfayı yenileyin.");
       return;
@@ -154,24 +154,24 @@ async function submit(status) {
   if (!bodyTr || !bodyEn) throw new Error("Türkçe ve İngilizce açıklamaların ikisini de doldur.");
   const common = { status, titleTr: data.get("titleTr"), titleEn: data.get("titleEn"), bodyTr, bodyEn };
   if (currentType === "about") {
-    const response = await fetch("/api/admin/page/about", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(common) });
+    const response = await fetch("/studio/api/admin/page/about", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(common) });
     if (!response.ok) throw new Error("Hakkında sayfası kaydedilemedi.");
     return;
   }
   if (currentType === "award") {
-    const response = await fetch(editingItem ? `/api/admin/awards/${editingItem.id}` : "/api/admin/awards", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...common, awardYear: data.get("awardYear") }) });
+    const response = await fetch(editingItem ? `/studio/api/admin/awards/${editingItem.id}` : "/studio/api/admin/awards", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...common, awardYear: data.get("awardYear") }) });
     if (!response.ok) throw new Error("Ödül kaydedilemedi.");
     return;
   }
   const images = [...(form.querySelector('input[type="file"]')?.files || [])];
   const media = await Promise.all(images.map(async (image) => {
     const optimised = await optimiseImage(image);
-    const uploaded = await fetch("/api/admin/media", { method: "POST", headers: { "content-type": optimised.type || "image/webp" }, body: optimised });
+    const uploaded = await fetch("/studio/api/admin/media", { method: "POST", headers: { "content-type": optimised.type || "image/webp" }, body: optimised });
     if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
     return uploaded.json();
   }));
   const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media } : {}) };
-  const response = await fetch(editingItem ? `/api/admin/content/${editingItem.id}` : "/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+  const response = await fetch(editingItem ? `/studio/api/admin/content/${editingItem.id}` : "/studio/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
 
