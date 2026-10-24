@@ -54,7 +54,8 @@ a,a:visited{color:inherit}
 /* Interior pages keep global navigation and make the active language explicit. */
 .page-actions{align-items:center}.page-language-toggle{display:grid;grid-template-columns:repeat(2,1fr);min-height:2.35rem;padding:0;overflow:hidden}.page-language-toggle span{display:grid;place-items:center;min-width:2.35rem;padding:0 .55rem;color:#0a0b08}.page-language-toggle span.is-active{background:#11140e;color:var(--ink)}.page-menu-toggle{min-height:2.35rem;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:.55rem .7rem;font:.7rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.page-menu-toggle:hover,.page-menu-toggle[aria-expanded="true"]{background:var(--green);color:var(--ink)}.page-menu{display:none;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;border-bottom:2px solid var(--ink);background:#11140e}.page-menu.is-open{display:grid}.page-menu a{padding:.85rem .75rem;border-right:1px solid rgba(238,233,217,.22);color:var(--ink);font:.68rem/1 var(--mono);letter-spacing:.06em;text-align:center;text-transform:uppercase;text-decoration:none}.page-menu a:last-child{border-right:0}.page-menu a:hover,.page-menu a:focus-visible{background:var(--green);outline:0}@media(max-width:700px){.page-actions{gap:.45rem}.page-language-toggle span{min-width:2.15rem;padding:0 .45rem}.page-menu-toggle{padding:.55rem .6rem;font-size:.62rem}.page-menu{grid-template-columns:repeat(2,minmax(0,1fr))}.page-menu a{padding:.85rem .6rem;border-bottom:1px solid rgba(238,233,217,.22)}.page-menu a:nth-child(2n){border-right:0}}
 
-/* Navigation remains available while reading any interior page. */
-.bar{position:sticky;top:0;z-index:40;background:rgba(9,10,8,.96);backdrop-filter:blur(12px)}
-.page-menu{position:sticky;top:4.9rem;z-index:39}
-@media(max-width:700px){.page-menu{top:4.2rem}}
+/* Navigation remains visibly fixed while reading any interior page. */
+body{padding-top:4.9rem}
+.bar{position:fixed;inset:0 0 auto;width:100%;z-index:50;background:rgba(9,10,8,.96);backdrop-filter:blur(12px)}
+.page-menu{position:fixed;top:4.9rem;left:0;right:0;z-index:49}
+@media(max-width:700px){body{padding-top:4.2rem}.page-menu{top:4.2rem}}
