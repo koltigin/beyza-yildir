@@ -8,9 +8,34 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social);
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-footer-align");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-page-menu");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
+  const actions = document.querySelector(".page-actions");
+  const back = actions?.querySelector(".back");
+  const header = document.querySelector(".bar");
+  let menuToggle;
+  let pageMenu;
+  if (actions && back && header) {
+    menuToggle = document.createElement("button");
+    menuToggle.type = "button";
+    menuToggle.className = "page-menu-toggle";
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.setAttribute("aria-controls", "page-menu");
+    menuToggle.innerHTML = '<span data-tr="Menü" data-en="Menu">Menü</span>';
+    pageMenu = document.createElement("nav");
+    pageMenu.id = "page-menu";
+    pageMenu.className = "page-menu";
+    pageMenu.setAttribute("aria-label", "Site navigation");
+    pageMenu.innerHTML = '<a href="/" data-tr="Ana sayfa" data-en="Home">Ana sayfa</a><a href="/about/" data-tr="Hakkında" data-en="About">Hakkında</a><a href="/#works" data-tr="Çalışmalar" data-en="Works">Çalışmalar</a><a href="/blog/" data-tr="Blog" data-en="Blog">Blog</a><a href="/exhibitions/" data-tr="Sergiler" data-en="Exhibitions">Sergiler</a><a href="/awards/" data-tr="Ödüller" data-en="Awards">Ödüller</a><a href="/contact/" data-tr="İletişim" data-en="Contact">İletişim</a>';
+    back.replaceWith(menuToggle);
+    header.after(pageMenu);
+    menuToggle.addEventListener("click", () => {
+      const open = menuToggle.getAttribute("aria-expanded") === "true";
+      menuToggle.setAttribute("aria-expanded", String(!open));
+      pageMenu.classList.toggle("is-open", !open);
+    });
+  }
   let language = localStorage.getItem("beyza-language") || "tr";
   const setLanguage = (next) => {
     language = next;
@@ -22,7 +47,8 @@
     });
     document.querySelectorAll("[data-language]").forEach((element) => { element.hidden = element.dataset.language !== language; });
     toggle.setAttribute("aria-pressed", String(language === "en"));
-    toggle.innerHTML = "TR <span>/</span> EN";
+    toggle.setAttribute("aria-label", language === "tr" ? "Aktif dil Türkçe. İngilizceye geç." : "Current language English. Switch to Turkish.");
+    toggle.innerHTML = `<span class="${language === "tr" ? "is-active" : ""}">TR</span><span class="${language === "en" ? "is-active" : ""}">EN</span>`;
     renderSharedFooter(language);
     document.dispatchEvent(new CustomEvent("beyza-language-change", { detail: { language } }));
   };
