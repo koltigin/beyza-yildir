@@ -34,6 +34,8 @@ let activeContentFilter = "all";
 let activeStatusFilter = "all";
 let activeWorkCategory = null;
 let removeExistingMedia = false;
+let currentMedia = [];
+let inlineMedia = [];
 
 const libraryLabels = {
   all: "Tüm içerikler",
@@ -84,6 +86,24 @@ function clearEditor() {
   form.reset();
   editorContent("Tr").innerHTML = "";
   editorContent("En").innerHTML = "";
+  currentMedia = [];
+  inlineMedia = [];
+}
+
+function mediaEntries(item) {
+  try { return JSON.parse(item?.media_json || "[]").filter((media) => media?.key); } catch { return []; }
+}
+
+function uniqueMedia(entries) {
+  return [...new Map(entries.filter((media) => media?.key).map((media) => [media.key, media])).values()];
+}
+
+function mediaKeysInHtml(html) {
+  return [...String(html || "").matchAll(/\/media\/([^"'\s?#]+)/g)].map((match) => decodeURIComponent(match[1]).replace(/%2F/g, "/"));
+}
+
+function isVideoKey(key) {
+  return /\.(mp4|webm|mov|ogv)$/i.test(String(key || ""));
 }
 
 function hasHiddenFallback(item) {
@@ -101,7 +121,7 @@ function renderExistingMedia(item) {
   const state = removeExistingMedia
     ? `<p>Bu görsel, kaydettiğinizde kaldırılacak.</p><button type="button" data-undo-media>Vazgeç</button>`
     : item.cover_key
-      ? `<img src="${imageUrl}" alt="Mevcut görsel" /><div><p>Mevcut görsel</p><small>Yeni bir dosya seçerseniz bu görsel onunla değiştirilir.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`
+      ? `${isVideoKey(item.cover_key) ? `<video src="${imageUrl}" controls playsinline preload="metadata"></video>` : `<img src="${imageUrl}" alt="Mevcut görsel" />`}<div><p>Mevcut ${isVideoKey(item.cover_key) ? "video" : "görsel"}</p><small>Yeni bir dosya seçerseniz bu medya onunla değiştirilir.</small><button type="button" data-remove-media>${isVideoKey(item.cover_key) ? "Videoyu kaldır" : "Görseli kaldır"}</button></div>`
       : fallbackHidden
         ? `<div><p>Görsel kaldırıldı</p><small>Bu çalışma için yeni bir dosya seçerek yeniden görsel ekleyebilirsin.</small></div>`
         : `<div class="existing-media-art existing-media-art-${demoArtClass}" aria-hidden="true"></div><div><p>Mevcut demo görseli</p><small>Bu yer tutucu görsel kamu sayfasında görünür. Yeni bir dosya seçerek değiştirebilir veya kaldırabilirsin.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`;
@@ -146,6 +166,7 @@ async function openEditor(type, item = null) {
     form.elements.titleEn.value = "Beyza Yıldır";
     await populateAbout();
   } else if (item) {
+    currentMedia = mediaEntries(item);
     form.elements.titleTr.value = item.title_tr || "";
     form.elements.titleEn.value = item.title_en || "";
     editorContent("Tr").innerHTML = item.body_tr || "";
@@ -260,8 +281,112 @@ async function optimiseImage(file) {
   return blob || file;
 }
 
-document.querySelectorAll(".editor-tools button").forEach((button) => button.addEventListener("click", () => {
+async function prepareMedia(file) {
+  if (file.type.startsWith("video/")) return file;
+  return optimiseImage(file);
+}
+
+async function uploadMedia(blob) {
+  const uploaded = await fetch("/studio/api/admin/media", { method: "POST", headers: { "content-type": blob.type || "image/webp" }, body: blob });
+  if (!uploaded.ok) {
+    const payload = await uploaded.json().catch(() => null);
+    throw new Error(payload?.error || "Medya yüklenemedi.");
+  }
+  return uploaded.json();
+}
+
+function drawShareTitle(context, title) {
+  const words = String(title || "Beyza Yıldır").toLocaleUpperCase("tr-TR").split(/\s+/);
+  const lines = [];
+  let line = "";
+  words.forEach((word) => {
+    const candidate = line ? `${line} ${word}` : word;
+    if (context.measureText(candidate).width > 880 && line) { lines.push(line); line = word; } else line = candidate;
+  });
+  if (line) lines.push(line);
+  return lines.slice(0, 3);
+}
+
+function embedSource(value, provider) {
+  try {
+    const url = new URL(value);
+    if (provider === "youtube") {
+      const host = url.hostname.replace(/^www\./, "");
+      const id = host === "youtu.be" ? url.pathname.slice(1) : url.searchParams.get("v") || url.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+      return id && /^[A-Za-z0-9_-]{6,}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+    }
+    const id = url.hostname.replace(/^www\./, "") === "vimeo.com" ? url.pathname.split("/").filter(Boolean).pop() : url.pathname.match(/\/video\/(\d+)/)?.[1];
+    return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null;
+  } catch (_) { return null; }
+}
+
+function insertEmbed(editable, provider) {
+  const label = provider === "youtube" ? "YouTube" : "Vimeo";
+  const source = embedSource(window.prompt(`${label} video bağlantısını yapıştır:`) || "", provider);
+  if (!source) throw new Error(`Geçerli bir ${label} bağlantısı girin.`);
+  editable.focus();
+  document.execCommand("insertHTML", false, `<figure class="embed-video"><iframe src="${source}" title="${label} video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></figure><p></p>`);
+}
+
+async function createShareCard(title, locale) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 630;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#0a0b08";
+  context.fillRect(0, 0, 1200, 630);
+  context.fillStyle = "#283314";
+  context.fillRect(735, 0, 465, 630);
+  context.fillStyle = "#d69a25";
+  context.fillRect(0, 546, 1200, 14);
+  context.fillStyle = "#eee9d9";
+  context.font = "900 82px Arial Black, Arial, sans-serif";
+  context.fillText("BEYZA", 68, 122);
+  context.fillText("YILDIR.", 68, 198);
+  context.fillStyle = "#9ab936";
+  context.font = "500 22px monospace";
+  context.fillText(locale === "en" ? "BLOG · WRITING" : "BLOG · YAZI", 72, 270);
+  context.fillStyle = "#eee9d9";
+  context.font = "900 64px Arial Black, Arial, sans-serif";
+  drawShareTitle(context, title).forEach((line, index) => context.fillText(line, 70, 370 + index * 72));
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("Paylaşım görseli oluşturulamadı.");
+  return { ...(await uploadMedia(blob)), role: `share-${locale}`, title };
+}
+
+async function insertEditorImage(editable) {
+  const picker = document.createElement("input");
+  picker.type = "file";
+  picker.accept = "image/jpeg,image/png,image/webp";
+  picker.hidden = true;
+  document.body.append(picker);
+  picker.addEventListener("change", async () => {
+    try {
+      const file = picker.files?.[0];
+      if (!file) return;
+      const alt = window.prompt("Görsel açıklaması (isteğe bağlı):") || "";
+      const image = await uploadMedia(await optimiseImage(file));
+      inlineMedia.push(image);
+      editable.focus();
+      document.execCommand("insertHTML", false, `<figure class="inline-image"><img src="/media/${encodeURIComponent(image.key).replace(/%2F/g, "/")}" alt="${escapeHtml(alt)}" /></figure><p></p>`);
+      notify("Görsel metne eklendi. Kaydettiğinizde yayınlanır.");
+    } catch (error) { notify(error.message || "Görsel eklenemedi.", "error"); }
+    finally { picker.remove(); }
+  }, { once: true });
+  picker.click();
+}
+
+document.querySelectorAll(".editor-tools button").forEach((button) => button.addEventListener("click", async () => {
   const editable = button.closest("fieldset").querySelector(".rich-editor");
+  if (button.dataset.command === "insertImage") {
+    await insertEditorImage(editable);
+    return;
+  }
+  if (button.dataset.command === "insertYoutube" || button.dataset.command === "insertVimeo") {
+    try { insertEmbed(editable, button.dataset.command === "insertYoutube" ? "youtube" : "vimeo"); }
+    catch (error) { notify(error.message, "error"); }
+    return;
+  }
   editable.focus();
   const value = button.dataset.command === "createLink" ? window.prompt("Bağlantı adresini yapıştır:") : (button.dataset.value || null);
   if (button.dataset.command !== "createLink" || value) document.execCommand(button.dataset.command, false, value);
@@ -283,14 +408,21 @@ async function submit(status) {
     if (!response.ok) throw new Error("Ödül kaydedilemedi.");
     return;
   }
-  const images = [...(form.querySelector('input[type="file"]')?.files || [])];
-  const media = await Promise.all(images.map(async (image) => {
-    const optimised = await optimiseImage(image);
-    const uploaded = await fetch("/studio/api/admin/media", { method: "POST", headers: { "content-type": optimised.type || "image/webp" }, body: optimised });
-    if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
-    return uploaded.json();
-  }));
-  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media, hideFallbackVisual: false } : removeExistingMedia ? { media: [], hideFallbackVisual: currentType === "work" } : {}) };
+  const files = [...(form.querySelector('input[type="file"]')?.files || [])];
+  const uploadedMedia = await Promise.all(files.map(async (file) => uploadMedia(await prepareMedia(file))));
+  const bodyMediaKeys = new Set([...mediaKeysInHtml(bodyTr), ...mediaKeysInHtml(bodyEn)]);
+  const retainedInlineMedia = currentMedia.filter((media) => bodyMediaKeys.has(media.key));
+  let nextMedia = uniqueMedia(removeExistingMedia ? inlineMedia : uploadedMedia.length ? [...uploadedMedia, ...retainedInlineMedia, ...inlineMedia] : [...currentMedia, ...inlineMedia]);
+  let shouldUpdateMedia = uploadedMedia.length > 0 || inlineMedia.length > 0 || removeExistingMedia;
+  if (currentType === "post" && !nextMedia.some((media) => media.role !== "share-tr" && media.role !== "share-en")) {
+    const shareCards = await Promise.all(["tr", "en"].map(async (locale) => {
+      const title = locale === "tr" ? common.titleTr : common.titleEn;
+      return currentMedia.find((media) => media.role === `share-${locale}` && media.title === title) || createShareCard(title, locale);
+    }));
+    nextMedia = uniqueMedia([...nextMedia.filter((media) => media.role !== "share-tr" && media.role !== "share-en"), ...shareCards]);
+    shouldUpdateMedia = true;
+  }
+  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(shouldUpdateMedia ? { media: nextMedia, hideFallbackVisual: removeExistingMedia && nextMedia.length === 0 && currentType === "work" } : {}) };
   const response = await fetch(editingItem ? `/studio/api/admin/content/${editingItem.id}` : "/studio/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }

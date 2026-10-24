@@ -23,8 +23,13 @@ function requireAccess(request: Request) {
   return Boolean(request.headers.get("Cf-Access-Jwt-Assertion") || request.headers.get("Cf-Access-Authenticated-User-Email"));
 }
 function contentId() { return crypto.randomUUID(); }
-function isSafeImage(request: Request) {
-  return ["image/jpeg", "image/png", "image/webp"].includes(request.headers.get("content-type") || "");
+const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const videoTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+function isSafeMedia(request: Request) {
+  return imageTypes.has(request.headers.get("content-type") || "") || videoTypes.has(request.headers.get("content-type") || "");
+}
+function isVideoKey(key: unknown) {
+  return /\.(mp4|webm|mov|ogv)$/i.test(String(key || ""));
 }
 function validEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -40,6 +45,12 @@ function publicContentPath(type: unknown, id: unknown) {
   const prefix = type === "work" ? "w" : type === "exhibition" ? "e" : "p";
   return `/${prefix}/${id}`;
 }
+function mediaItems(item: Record<string, unknown>) {
+  try { return JSON.parse(String(item.media_json || "[]")) as Array<{ key?: string; role?: string }>; } catch { return []; }
+}
+function mediaUrl(key: string, env: Env) {
+  return `${env.PUBLIC_ORIGIN}/media/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
 function sharePage(item: Record<string, unknown>, env: Env, locale = "tr") {
   const path = `/${locale}${publicContentPath(item.type, item.id)}`;
   const canonical = `${env.PUBLIC_ORIGIN}${path}`;
@@ -47,7 +58,8 @@ function sharePage(item: Record<string, unknown>, env: Env, locale = "tr") {
   const titleEn = String(item.title_en || item.title_tr || "Beyza Yıldır");
   const description = plainText(locale === "en" ? (item.body_en || item.body_tr) : (item.body_tr || item.body_en));
   const fallback = item.type === "post" ? "blog" : item.type === "exhibition" ? "exhibitions" : "works";
-  const image = item.cover_key ? `${env.PUBLIC_ORIGIN}/media/${String(item.cover_key).split("/").map(encodeURIComponent).join("/")}` : `${env.PUBLIC_ORIGIN}/og/${fallback}.png`;
+  const shareKey = mediaItems(item).find((media) => media.role === `share-${locale}`)?.key;
+  const image = item.cover_key && !isVideoKey(item.cover_key) ? mediaUrl(String(item.cover_key), env) : shareKey ? mediaUrl(shareKey, env) : `${env.PUBLIC_ORIGIN}/og/${fallback}.png`;
   const viewer = item.type === "work" ? `/${locale}/work/?id=${encodeURIComponent(String(item.id))}` : item.type === "exhibition" ? `/${locale}/event/?id=${encodeURIComponent(String(item.id))}` : `/${locale}/post/?id=${encodeURIComponent(String(item.id))}`;
   return new Response(`<!doctype html><html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)} — Beyza Yıldır</title><meta name="description" content="${escapeHtml(description)}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="article"><meta property="og:site_name" content="Beyza Yıldır"><meta property="og:locale" content="${locale === "en" ? "en_GB" : "tr_TR"}"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${image}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(titleEn)}"><meta name="twitter:description" content="${escapeHtml(plainText(item.body_en || item.body_tr))}"><meta name="twitter:image" content="${image}"></head><body><main><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><p><a href="${viewer}">Beyza Yıldır — view content</a></p></main><script>location.replace(${JSON.stringify(viewer)})</script></body></html>`, { headers: { "content-type": "text/html; charset=UTF-8", "cache-control": "public, max-age=300" } });
 }
@@ -63,14 +75,14 @@ export default {
     const localizedContentMatch = url.pathname.match(/^\/(tr|en)\/(p|w|e)\/([0-9a-f-]+)\/?$/i);
     if (localizedContentMatch && request.method === "GET") {
       const expectedType = localizedContentMatch[2] === "w" ? "work" : localizedContentMatch[2] === "e" ? "exhibition" : "post";
-      const item = await env.DB.prepare("SELECT id, type, title_tr, title_en, body_tr, body_en, cover_key FROM content WHERE id = ? AND type = ? AND status = 'published'").bind(localizedContentMatch[3], expectedType).first<Record<string, unknown>>();
+      const item = await env.DB.prepare("SELECT id, type, title_tr, title_en, body_tr, body_en, cover_key, media_json FROM content WHERE id = ? AND type = ? AND status = 'published'").bind(localizedContentMatch[3], expectedType).first<Record<string, unknown>>();
       return item ? sharePage(item, env, localizedContentMatch[1].toLowerCase()) : new Response("Not found", { status: 404 });
     }
 
     const sharedContentMatch = url.pathname.match(/^\/(p|w|e)\/([0-9a-f-]+)\/?$/i);
     if (sharedContentMatch && request.method === "GET") {
       const expectedType = sharedContentMatch[1] === "w" ? "work" : sharedContentMatch[1] === "e" ? "exhibition" : "post";
-      const item = await env.DB.prepare("SELECT id, type, title_tr, title_en, body_tr, body_en, cover_key FROM content WHERE id = ? AND type = ? AND status = 'published'").bind(sharedContentMatch[2], expectedType).first<Record<string, unknown>>();
+      const item = await env.DB.prepare("SELECT id, type, title_tr, title_en, body_tr, body_en, cover_key, media_json FROM content WHERE id = ? AND type = ? AND status = 'published'").bind(sharedContentMatch[2], expectedType).first<Record<string, unknown>>();
       return item ? sharePage(item, env) : new Response("Not found", { status: 404 });
     }
 
@@ -231,8 +243,9 @@ export default {
       if (!String(payload.titleTr || "").trim() || !String(payload.titleEn || "").trim() || !String(payload.bodyTr || "").trim() || !String(payload.bodyEn || "").trim()) return json({ error: "Both Turkish and English content are required" }, 400, adminHeaders);
       if (payload.type === "work" && !allowedCategories.has(String(payload.category))) return json({ error: "Invalid category" }, 400, adminHeaders);
       const id = contentId();
-      const media = Array.isArray(payload.media) ? payload.media : [];
-      const coverKey = String(payload.coverKey || media[0]?.key || "") || null;
+      const media = (Array.isArray(payload.media) ? payload.media : []) as Array<{ key?: string; role?: string }>;
+      const coverMedia = media.find((item: { key?: string; role?: string }) => item?.key && item.role !== "share-tr" && item.role !== "share-en");
+      const coverKey = String(payload.coverKey || coverMedia?.key || "") || null;
       await env.DB.prepare("INSERT INTO content (id, type, status, category, project_id, title_tr, title_en, body_tr, body_en, cover_key, media_json, event_start, event_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(id, payload.type, payload.status, payload.category || null, payload.projectId || null, String(payload.titleTr).trim(), String(payload.titleEn).trim(), String(payload.bodyTr).trim(), String(payload.bodyEn).trim(), coverKey, JSON.stringify(media), payload.eventStart || null, payload.eventEnd || null).run();
       return json({ id }, 201, adminHeaders);
@@ -253,11 +266,12 @@ export default {
       const bodyTr = String(payload.bodyTr ?? existing.body_tr).trim();
       const bodyEn = String(payload.bodyEn ?? existing.body_en).trim();
       if (!titleTr || !titleEn || !bodyTr || !bodyEn) return json({ error: "Both Turkish and English content are required" }, 400, adminHeaders);
-      const existingMedia = JSON.parse(String(existing.media_json || "[]")) as Array<{ key?: string; hidden?: boolean }>;
-      const requestedMedia = (Array.isArray(payload.media) ? payload.media : existingMedia) as Array<{ key?: string; hidden?: boolean }>;
+      const existingMedia = JSON.parse(String(existing.media_json || "[]")) as Array<{ key?: string; hidden?: boolean; role?: string }>;
+      const requestedMedia = (Array.isArray(payload.media) ? payload.media : existingMedia) as Array<{ key?: string; hidden?: boolean; role?: string }>;
       const shouldHideFallback = payload.hideFallbackVisual === true || (payload.hideFallbackVisual === undefined && existingMedia.some((item) => item?.hidden === true));
       const media = shouldHideFallback ? [{ hidden: true }] : requestedMedia.filter((item) => item?.hidden !== true);
-      const coverKey = Array.isArray(payload.media) ? (String(payload.coverKey || media[0]?.key || "") || null) : existing.cover_key;
+      const coverMedia = media.find((item) => item?.key && item.role !== "share-tr" && item.role !== "share-en");
+      const coverKey = Array.isArray(payload.media) ? (String(payload.coverKey || coverMedia?.key || "") || null) : existing.cover_key;
       const result = await env.DB.prepare("UPDATE content SET status = ?, category = ?, project_id = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, cover_key = ?, media_json = ?, event_start = ?, event_end = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(status, category, payload.projectId ?? existing.project_id, titleTr, titleEn, bodyTr, bodyEn, coverKey, JSON.stringify(media), payload.eventStart ?? existing.event_start, payload.eventEnd ?? existing.event_end, contentMatch[1]).run();
       if (result.meta.changes && Array.isArray(payload.media)) {
@@ -281,16 +295,18 @@ export default {
     }
 
     if (adminPath === "/api/admin/media" && request.method === "POST") {
-      if (!isSafeImage(request)) return json({ error: "Only JPEG, PNG and WebP images are accepted" }, 415, adminHeaders);
-      const maxBytes = 12 * 1024 * 1024;
+      if (!isSafeMedia(request)) return json({ error: "Only JPEG, PNG, WebP, MP4, WebM and MOV files are accepted" }, 415, adminHeaders);
+      const contentType = request.headers.get("content-type") || "image/jpeg";
+      const isVideo = videoTypes.has(contentType);
+      const maxBytes = isVideo ? 80 * 1024 * 1024 : 12 * 1024 * 1024;
       const contentLength = Number(request.headers.get("content-length") || 0);
-      if (contentLength > maxBytes) return json({ error: "Image exceeds 12 MB limit" }, 413, adminHeaders);
+      if (contentLength > maxBytes) return json({ error: isVideo ? "Video exceeds 80 MB limit" : "Image exceeds 12 MB limit" }, 413, adminHeaders);
       const body = await request.arrayBuffer();
-      if (body.byteLength > maxBytes) return json({ error: "Image exceeds 12 MB limit" }, 413, adminHeaders);
-      const extension = request.headers.get("content-type")?.split("/")[1] || "jpg";
+      if (body.byteLength > maxBytes) return json({ error: isVideo ? "Video exceeds 80 MB limit" : "Image exceeds 12 MB limit" }, 413, adminHeaders);
+      const extension = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" } as Record<string, string>)[contentType] || "bin";
       const key = `uploads/${new Date().toISOString().slice(0, 10)}/${contentId()}.${extension}`;
-      await env.MEDIA.put(key, body, { httpMetadata: { contentType: request.headers.get("content-type") || "image/jpeg" } });
-      return json({ key, url: `${env.PUBLIC_ORIGIN}/media/${key}` }, 201, adminHeaders);
+      await env.MEDIA.put(key, body, { httpMetadata: { contentType } });
+      return json({ key, url: `${env.PUBLIC_ORIGIN}/media/${key}`, kind: isVideo ? "video" : "image" }, 201, adminHeaders);
     }
     return json({ error: "Not found" }, 404, adminHeaders);
   }

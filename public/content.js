@@ -23,7 +23,9 @@ if (contentId && contentRoot) {
       let media = [];
       try { media = JSON.parse(content.media_json || "[]"); } catch (_) {}
       const fallbackHidden = Array.isArray(media) && media.some((item) => item?.hidden === true);
-      const image = content.cover_key ? `<img class="content-image" src="/media/${encodeURIComponent(content.cover_key).replace(/%2F/g, "/")}" alt="${escapeHtml(content.title_en)}" />` : content.type === "work" && !fallbackHidden ? `<div class="content-art content-art-${artClass}" role="img" aria-label="${escapeHtml(content.title_en)}"></div>` : "";
+      const coverUrl = `/media/${encodeURIComponent(content.cover_key || "").replace(/%2F/g, "/")}`;
+      const isVideo = /\.(mp4|webm|mov|ogv)$/i.test(String(content.cover_key || ""));
+      const image = content.cover_key ? (isVideo ? `<video class="content-video" src="${coverUrl}" controls playsinline preload="metadata"></video>` : `<img class="content-image" src="${coverUrl}" alt="${escapeHtml(content.title_en)}" />`) : content.type === "work" && !fallbackHidden ? `<div class="content-art content-art-${artClass}" role="img" aria-label="${escapeHtml(content.title_en)}"></div>` : "";
       const date = content.type === "exhibition" && content.event_start ? `${escapeHtml(content.event_start)}${content.event_end ? ` — ${escapeHtml(content.event_end)}` : ""}` : escapeHtml(String(content.created_at || "").slice(0, 10));
       const context = content.type === "exhibition" ? `<p class="kicker" data-language="tr">Etkinlik · ${date}</p><p class="kicker" data-language="en" hidden>Event · ${date}</p>` : `<p class="kicker">${escapeHtml(content.category || content.type)} · ${date}</p>`;
       contentRoot.innerHTML = `<section class="page-head">${context}<h1 data-language="tr">${escapeHtml(content.title_tr)}<em>.</em></h1><h1 data-language="en" hidden>${escapeHtml(content.title_en)}<em>.</em></h1></section>${image}<article class="prose"><section class="language-section" data-language="tr">${content.body_tr}</section><section class="language-section" data-language="en" hidden>${content.body_en}</section></article><div id="related-posts"></div>`;

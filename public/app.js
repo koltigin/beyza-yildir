@@ -68,7 +68,9 @@ function renderWorks() {
     art.classList.add(work.className);
     if (work.cover_key) {
       art.classList.add("has-image");
-      art.style.backgroundImage = `url(/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")})`;
+      const mediaUrl = `/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")}`;
+      if (/\.(mp4|webm|mov|ogv)$/i.test(work.cover_key)) art.insertAdjacentHTML("afterbegin", `<video class="work-preview-video" src="${mediaUrl}" muted playsinline preload="metadata"></video>`);
+      else art.style.backgroundImage = `url(${mediaUrl})`;
     }
     art.querySelector(".work-index").textContent = String(index + 1).padStart(2, "0");
     node.querySelector(".work-category").textContent = work.category;
