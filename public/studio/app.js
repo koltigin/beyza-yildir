@@ -27,8 +27,6 @@ const libraryLabels = {
   award: "Ödüller"
 };
 
-const actions = document.querySelector(".actions");
-actions.insertAdjacentHTML("beforeend", '<button type="button" data-type="award"><span>04</span>Yeni ödül <b>↗</b></button><button type="button" data-type="about"><span>05</span>Hakkında sayfasını düzenle <b>↗</b></button>');
 const awardYearField = document.createElement("label");
 awardYearField.id = "award-year-field";
 awardYearField.hidden = true;
