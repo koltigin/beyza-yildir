@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-video-media");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-header-unified");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -22,7 +22,7 @@
     menuToggle.className = "page-menu-toggle";
     menuToggle.setAttribute("aria-expanded", "false");
     menuToggle.setAttribute("aria-controls", "page-menu");
-    menuToggle.innerHTML = '<span data-tr="Menü" data-en="Menu">Menü</span>';
+    menuToggle.innerHTML = '<span data-tr="Menü" data-en="Menu">Menü</span> <b aria-hidden="true">+</b>';
     pageMenu = document.createElement("nav");
     pageMenu.id = "page-menu";
     pageMenu.className = "page-menu";

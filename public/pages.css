@@ -70,3 +70,15 @@ body{padding-top:4.9rem}
 /* The wordmark keeps the same slanted signature on every page. */
 .logo{display:inline-block;transform:rotate(-3deg);transform-origin:left center}
 .tile figure video{display:block;width:100%;height:100%;object-fit:cover}
+
+/* Interior headers deliberately reuse the home header's mobile geometry. */
+@media(max-width:700px){
+  body{padding-top:70px}
+  .bar{display:grid;grid-template-columns:1fr auto auto;align-items:center;min-height:70px;padding:1rem 1.25rem}
+  .logo{font:1.25rem/.78 var(--display);letter-spacing:-.08em}
+  .page-actions{display:contents}
+  .page-language-toggle{grid-column:2;grid-row:1;min-height:2.25rem}
+  .page-menu-toggle{grid-column:3;grid-row:1;min-height:2.25rem;padding:.6rem;background:var(--yellow);border-color:var(--ink);color:#0a0b08;font:.67rem/1 var(--mono)}
+  .page-menu-toggle:hover,.page-menu-toggle[aria-expanded="true"]{background:var(--yellow);color:#0a0b08}
+  .page-menu{top:70px}
+}
