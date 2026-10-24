@@ -257,6 +257,13 @@ export default {
       const coverKey = Array.isArray(payload.media) ? (String(payload.coverKey || media[0]?.key || "") || null) : existing.cover_key;
       const result = await env.DB.prepare("UPDATE content SET status = ?, category = ?, project_id = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, cover_key = ?, media_json = ?, event_start = ?, event_end = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(status, category, payload.projectId ?? existing.project_id, titleTr, titleEn, bodyTr, bodyEn, coverKey, JSON.stringify(media), payload.eventStart ?? existing.event_start, payload.eventEnd ?? existing.event_end, contentMatch[1]).run();
+      if (result.meta.changes && Array.isArray(payload.media)) {
+        const previousMedia = JSON.parse(String(existing.media_json || "[]")) as Array<{ key?: string }>;
+        const retainedKeys = new Set(media.map((item: { key?: string }) => item?.key).filter(Boolean));
+        const obsoleteKeys = [...new Set([existing.cover_key, ...previousMedia.map((item) => item.key)].filter(Boolean))]
+          .filter((key): key is string => typeof key === "string" && !retainedKeys.has(key));
+        if (obsoleteKeys.length) await env.MEDIA.delete(obsoleteKeys);
+      }
       return result.meta.changes ? json({ ok: true }, 200, adminHeaders) : json({ error: "Not found" }, 404, adminHeaders);
     }
 

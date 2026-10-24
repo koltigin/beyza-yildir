@@ -9,6 +9,10 @@ const contentTypes = {
 const editor = document.querySelector(".editor");
 const form = document.querySelector("#content-form");
 const mediaLabel = document.querySelector("#media-label");
+const mediaPreview = document.createElement("section");
+mediaPreview.className = "existing-media";
+mediaPreview.hidden = true;
+mediaLabel.after(mediaPreview);
 const categoryField = document.querySelector("#category-field");
 const projectField = document.querySelector("#project-field");
 const eventFields = document.querySelector("#event-fields");
@@ -28,6 +32,8 @@ let managedItems = new Map();
 let allManagedContent = [];
 let activeContentFilter = "all";
 let activeStatusFilter = "all";
+let activeWorkCategory = null;
+let removeExistingMedia = false;
 
 const libraryLabels = {
   all: "Tüm içerikler",
@@ -36,6 +42,12 @@ const libraryLabels = {
   exhibition: "Sergi ve etkinlikler",
   award: "Ödüller"
 };
+const workCategoryLabels = { Photography: "Fotoğraf", Collages: "Kolajlar", Drawings: "Çizimler", Films: "Filmler", "Video art": "Video sanatı" };
+
+const workFilter = document.querySelector('[data-content-filter="work"]');
+if (workFilter) {
+  workFilter.outerHTML = `<p class="studio-category-label">Kategoriler</p>${Object.entries(workCategoryLabels).map(([category, label]) => `<button type="button" data-content-filter="work" data-work-category="${category}">${label} <span data-count-category="${category}">0</span></button>`).join("")}`;
+}
 
 const awardYearField = document.createElement("label");
 awardYearField.id = "award-year-field";
@@ -74,6 +86,20 @@ function clearEditor() {
   editorContent("En").innerHTML = "";
 }
 
+function renderExistingMedia(item) {
+  mediaPreview.hidden = true;
+  mediaPreview.innerHTML = "";
+  if (!item?.cover_key || !contentTypes[currentType].media) return;
+  const imageUrl = `/media/${encodeURIComponent(item.cover_key).replace(/%2F/g, "/")}`;
+  const state = removeExistingMedia
+    ? `<p>Bu görsel, kaydettiğinizde kaldırılacak.</p><button type="button" data-undo-media>Vazgeç</button>`
+    : `<img src="${imageUrl}" alt="Mevcut görsel" /><div><p>Mevcut görsel</p><small>Yeni bir dosya seçerseniz bu görsel onunla değiştirilir.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`;
+  mediaPreview.innerHTML = state;
+  mediaPreview.hidden = false;
+  mediaPreview.querySelector("[data-remove-media]")?.addEventListener("click", () => { removeExistingMedia = true; renderExistingMedia(item); });
+  mediaPreview.querySelector("[data-undo-media]")?.addEventListener("click", () => { removeExistingMedia = false; renderExistingMedia(item); });
+}
+
 async function populateAbout() {
   const response = await fetch("/studio/api/admin/page/about", { credentials: "same-origin", headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(response.status === 401 ? "Hakkında metni yüklenemedi: Cloudflare Access oturumu API için yetkili değil." : "Hakkında metni yüklenemedi.");
@@ -90,6 +116,8 @@ async function populateAbout() {
 async function openEditor(type, item = null) {
   currentType = type;
   editingItem = item;
+  removeExistingMedia = false;
+  mediaPreview.hidden = true;
   editorNotice.hidden = true;
   const details = contentTypes[currentType];
   editor.hidden = false;
@@ -122,6 +150,7 @@ async function openEditor(type, item = null) {
     if (currentType === "award") form.elements.awardYear.value = item.award_year || "";
     document.querySelector("#editor-label").textContent = `${details.label} — düzenle`;
   }
+  renderExistingMedia(item);
   editor.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -138,14 +167,21 @@ function updateLibraryControls() {
   });
   document.querySelectorAll("[data-status-filter]").forEach((button) => button.classList.toggle("is-active", button.dataset.statusFilter === activeStatusFilter));
   document.querySelector("#library-kicker").textContent = activeStatusFilter === "all" ? "İçerik arşivi" : activeStatusFilter === "published" ? "Yayında" : "Taslaklar";
-  document.querySelector("#library-heading").textContent = libraryLabels[activeContentFilter];
+  document.querySelector("#library-heading").textContent = activeContentFilter === "work" && activeWorkCategory ? workCategoryLabels[activeWorkCategory] : libraryLabels[activeContentFilter];
+  document.querySelectorAll("[data-work-category]").forEach((button) => {
+    const category = button.dataset.workCategory;
+    button.classList.toggle("is-active", activeContentFilter === "work" && activeWorkCategory === category);
+    const count = allManagedContent.filter((item) => item.type === "work" && item.category === category).length;
+    const countElement = button.querySelector("[data-count-category]");
+    if (countElement) countElement.textContent = count;
+  });
   const actionType = activeContentFilter === "all" ? "work" : activeContentFilter;
   document.querySelector("#new-category-content").textContent = `${contentTypes[actionType].label} ekle ↗`;
 }
 
 function renderFilteredContent() {
   const target = document.querySelector("#content-items");
-  const content = allManagedContent.filter((item) => (activeContentFilter === "all" || item.type === activeContentFilter) && (activeStatusFilter === "all" || item.status === activeStatusFilter));
+  const content = allManagedContent.filter((item) => (activeContentFilter === "all" || item.type === activeContentFilter) && (!activeWorkCategory || item.category === activeWorkCategory) && (activeStatusFilter === "all" || item.status === activeStatusFilter));
   target.innerHTML = content.length ? content.map((item) => {
     const resource = item.type === "award" ? "awards" : "content";
     return `<article><p>${item.status === "published" ? "yayında" : "taslak"} · ${contentTypes[item.type]?.label || escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-edit-id="${item.id}">Düzenle</button><button data-toggle-id="${item.id}" data-resource="${resource}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Taslağa al" : "Yayınla"}</button><button data-delete-id="${item.id}" data-resource="${resource}">Sil</button></article>`;
@@ -178,6 +214,7 @@ function renderManagedContent(content) {
 
 document.querySelectorAll("[data-content-filter]").forEach((button) => button.addEventListener("click", () => {
   activeContentFilter = button.dataset.contentFilter;
+  activeWorkCategory = button.dataset.workCategory || null;
   updateLibraryControls();
   renderFilteredContent();
 }));
@@ -242,7 +279,7 @@ async function submit(status) {
     if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
     return uploaded.json();
   }));
-  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media } : {}) };
+  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media } : removeExistingMedia ? { media: [] } : {}) };
   const response = await fetch(editingItem ? `/studio/api/admin/content/${editingItem.id}` : "/studio/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
