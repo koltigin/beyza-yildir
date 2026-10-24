@@ -58,9 +58,9 @@
 @media(max-width:700px){.category-band a{min-width:0;font-size:clamp(.88rem,4.4vw,1.05rem);line-height:.95;overflow-wrap:anywhere}}
 
 /* The home language switcher uses the same explicit active segment as inner pages. */
-.language-toggle{display:grid;grid-template-columns:repeat(2,1fr);min-height:2.35rem;padding:0;overflow:hidden;border-color:var(--yellow);background:var(--yellow);color:#0a0b08}
-.language-toggle span{display:grid;place-items:center;min-width:2.35rem;padding:0 .55rem;color:#0a0b08}
-.language-toggle span.is-active{background:#11130e;color:var(--ink)}
+.language-toggle{display:grid;grid-template-columns:repeat(2,1fr);min-height:2.35rem;padding:0;overflow:hidden;border-color:var(--yellow);background:#11130e;color:var(--ink)}
+.language-toggle span{display:grid;place-items:center;min-width:2.35rem;padding:0 .55rem;color:var(--ink)}
+.language-toggle span.is-active{background:var(--yellow);color:#0a0b08}
 @media(max-width:700px){.site-header .language-toggle{padding:0;min-height:2.25rem}.site-header .language-toggle span{min-width:2.15rem;padding:0 .45rem}}
 @media(max-width:700px){.site-header .language-toggle{display:grid;width:auto;grid-template-columns:repeat(2,1fr)}}
 
