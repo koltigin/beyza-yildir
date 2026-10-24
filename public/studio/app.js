@@ -15,6 +15,17 @@ const eventFields = document.querySelector("#event-fields");
 let currentType = "work";
 let editingItem = null;
 let managedItems = new Map();
+let allManagedContent = [];
+let activeContentFilter = "all";
+let activeStatusFilter = "all";
+
+const libraryLabels = {
+  all: "Tüm içerikler",
+  work: "Eserler",
+  post: "Blog yazıları",
+  exhibition: "Sergi ve etkinlikler",
+  award: "Ödüller"
+};
 
 const actions = document.querySelector(".actions");
 actions.insertAdjacentHTML("beforeend", '<button type="button" data-type="award"><span>04</span>Yeni ödül <b>↗</b></button><button type="button" data-type="about"><span>05</span>Hakkında sayfasını düzenle <b>↗</b></button>');
@@ -96,13 +107,28 @@ async function openEditor(type, item = null) {
 document.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => openEditor(button.dataset.type).catch((error) => notify(error.message))));
 document.querySelector("#close-editor").addEventListener("click", () => { editor.hidden = true; });
 
-function renderManagedContent(content) {
+function updateLibraryControls() {
+  document.querySelectorAll("[data-content-filter]").forEach((button) => {
+    const type = button.dataset.contentFilter;
+    button.classList.toggle("is-active", type === activeContentFilter);
+    const count = allManagedContent.filter((item) => type === "all" || item.type === type).length;
+    const countElement = button.querySelector("[data-count]");
+    if (countElement) countElement.textContent = count;
+  });
+  document.querySelectorAll("[data-status-filter]").forEach((button) => button.classList.toggle("is-active", button.dataset.statusFilter === activeStatusFilter));
+  document.querySelector("#library-kicker").textContent = activeStatusFilter === "all" ? "İçerik arşivi" : activeStatusFilter === "published" ? "Yayında" : "Taslaklar";
+  document.querySelector("#library-heading").textContent = libraryLabels[activeContentFilter];
+  const actionType = activeContentFilter === "all" ? "work" : activeContentFilter;
+  document.querySelector("#new-category-content").textContent = `${contentTypes[actionType].label} ekle ↗`;
+}
+
+function renderFilteredContent() {
   const target = document.querySelector("#content-items");
-  managedItems = new Map(content.map((item) => [item.id, item]));
+  const content = allManagedContent.filter((item) => (activeContentFilter === "all" || item.type === activeContentFilter) && (activeStatusFilter === "all" || item.status === activeStatusFilter));
   target.innerHTML = content.length ? content.map((item) => {
     const resource = item.type === "award" ? "awards" : "content";
     return `<article><p>${item.status === "published" ? "yayında" : "taslak"} · ${contentTypes[item.type]?.label || escapeHtml(item.type)}</p><h3>${escapeHtml(item.title_tr)}</h3><button data-edit-id="${item.id}">Düzenle</button><button data-toggle-id="${item.id}" data-resource="${resource}" data-next-status="${item.status === "published" ? "draft" : "published"}">${item.status === "published" ? "Taslağa al" : "Yayınla"}</button><button data-delete-id="${item.id}" data-resource="${resource}">Sil</button></article>`;
-  }).join("") : '<p class="empty">Eklediğin eserler, blog yazıları, ödüller ve sergi duyuruları burada görünecek.</p>';
+  }).join("") : `<p class="empty">${libraryLabels[activeContentFilter]} içinde ${activeStatusFilter === "published" ? "yayınlanmış" : activeStatusFilter === "draft" ? "taslak" : "henüz"} içerik yok.</p>`;
   target.querySelectorAll("[data-edit-id]").forEach((button) => button.addEventListener("click", () => {
     const item = managedItems.get(button.dataset.editId);
     if (item) openEditor(item.type, item).catch((error) => notify(error.message));
@@ -117,6 +143,27 @@ function renderManagedContent(content) {
     loadPublishedContent();
   }));
 }
+
+function renderManagedContent(content) {
+  allManagedContent = content;
+  managedItems = new Map(content.map((item) => [item.id, item]));
+  updateLibraryControls();
+  renderFilteredContent();
+}
+
+document.querySelectorAll("[data-content-filter]").forEach((button) => button.addEventListener("click", () => {
+  activeContentFilter = button.dataset.contentFilter;
+  updateLibraryControls();
+  renderFilteredContent();
+}));
+
+document.querySelectorAll("[data-status-filter]").forEach((button) => button.addEventListener("click", () => {
+  activeStatusFilter = button.dataset.statusFilter;
+  updateLibraryControls();
+  renderFilteredContent();
+}));
+
+document.querySelector("#new-category-content").addEventListener("click", () => openEditor(activeContentFilter === "all" ? "work" : activeContentFilter).catch((error) => notify(error.message)));
 
 async function loadPublishedContent() {
   try {
