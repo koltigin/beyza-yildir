@@ -7,7 +7,9 @@ interface Env {
 }
 
 const allowedCategories = new Set(["Photography", "Collages", "Drawings", "Films", "Video art"]);
-const publicHeaders = { "content-type": "application/json; charset=UTF-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=60" };
+// Published records are edited in Studio; do not let a prior API response mask
+// a just-saved title, date or body on the public site.
+const publicHeaders = { "content-type": "application/json; charset=UTF-8", "access-control-allow-origin": "*", "cache-control": "no-store" };
 const adminHeaders = { "content-type": "application/json; charset=UTF-8", "cache-control": "no-store" };
 
 function json(body: unknown, status = 200, headers = publicHeaders) {

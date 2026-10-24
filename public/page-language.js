@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-header-fix");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-menu-sync");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -27,7 +27,7 @@
     pageMenu.id = "page-menu";
     pageMenu.className = "page-menu";
     pageMenu.setAttribute("aria-label", "Site navigation");
-    pageMenu.innerHTML = '<a href="/" data-tr="Ana sayfa" data-en="Home">Ana sayfa</a><a href="/about/" data-tr="Hakkında" data-en="About">Hakkında</a><a href="/#works" data-tr="Çalışmalar" data-en="Works">Çalışmalar</a><a href="/blog/" data-tr="Blog" data-en="Blog">Blog</a><a href="/exhibitions/" data-tr="Sergiler" data-en="Exhibitions">Sergiler</a><a href="/awards/" data-tr="Ödüller" data-en="Awards">Ödüller</a><a href="/contact/" data-tr="İletişim" data-en="Contact">İletişim</a>';
+    pageMenu.innerHTML = '<a href="/about/" data-tr="Hakkında" data-en="About">Hakkında</a><a href="/blog/" data-tr="Blog" data-en="Blog">Blog</a><a href="/photography/" data-tr="Fotoğraf" data-en="Photography">Fotoğraf</a><a href="/collages/" data-tr="Kolajlar" data-en="Collages">Kolajlar</a><a href="/drawings/" data-tr="Çizimler" data-en="Drawings">Çizimler</a><a href="/films/" data-tr="Filmler" data-en="Films">Filmler</a><a href="/video-art/" data-tr="Video sanatı" data-en="Video art">Video sanatı</a><a href="/awards/" data-tr="Ödüller" data-en="Awards">Ödüller</a><a href="/contact/" data-tr="İletişim" data-en="Contact">İletişim</a>';
     back.replaceWith(menuToggle);
     header.after(pageMenu);
     menuToggle.addEventListener("click", () => {

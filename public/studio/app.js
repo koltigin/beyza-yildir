@@ -1,7 +1,7 @@
 const contentTypes = {
   work: { label: "Yeni eser", help: "Bir resim, fotoğraf, kolaj, film ya da video art çalışması ekle. Kategori ve varsa seri bilgisini belirt.", media: "Eser görselleri" },
   post: { label: "Yeni blog yazısı", help: "Beyza'nın blogunda yayınlanacak iki dilli yazıyı ekle. Kapak görseli isteğe bağlıdır.", media: "Kapak görseli (isteğe bağlı)" },
-  exhibition: { label: "Yeni sergi / etkinlik", help: "Sergi, gösterim, konuşma veya etkinlik duyurusunu tarihleriyle birlikte ekle.", media: "Etkinlik görseli / afişi (isteğe bağlı)" },
+  exhibition: { label: "Yeni sergi / etkinlik", help: "Sergi, gösterim, konuşma veya etkinlik duyurusunu tarihleriyle birlikte ekle. Tarihler sayfada otomatik görünür; açıklama içindeki tarihleri de gerekirse güncelle.", media: "Etkinlik görseli / afişi (isteğe bağlı)" },
   award: { label: "Yeni ödül", help: "Ödülün veya seçkinin adını, yılını ve kısa açıklamasını iki dilde ekle.", media: "" },
   about: { label: "Hakkında sayfasını düzenle", help: "Bu metin Hakkında sayfasında seçili dile göre görünür. İki dili de güncelle.", media: "" }
 };
@@ -12,6 +12,11 @@ const mediaLabel = document.querySelector("#media-label");
 const categoryField = document.querySelector("#category-field");
 const projectField = document.querySelector("#project-field");
 const eventFields = document.querySelector("#event-fields");
+const editorNotice = document.createElement("p");
+editorNotice.className = "editor-notice";
+editorNotice.hidden = true;
+editorNotice.setAttribute("role", "status");
+document.querySelector("#editor-help").after(editorNotice);
 let currentType = "work";
 let editingItem = null;
 let managedItems = new Map();
@@ -34,6 +39,11 @@ awardYearField.innerHTML = 'Ödül yılı <input name="awardYear" inputmode="num
 eventFields.after(awardYearField);
 
 function notify(message) {
+  if (!editor.hidden) {
+    editorNotice.textContent = message;
+    editorNotice.hidden = false;
+    return;
+  }
   const output = document.querySelector(".empty");
   if (output) output.textContent = message;
 }
@@ -68,6 +78,7 @@ async function populateAbout() {
 async function openEditor(type, item = null) {
   currentType = type;
   editingItem = item;
+  editorNotice.hidden = true;
   const details = contentTypes[currentType];
   editor.hidden = false;
   document.querySelector("#editor-label").textContent = details.label;
