@@ -253,12 +253,15 @@ export default {
       const bodyTr = String(payload.bodyTr ?? existing.body_tr).trim();
       const bodyEn = String(payload.bodyEn ?? existing.body_en).trim();
       if (!titleTr || !titleEn || !bodyTr || !bodyEn) return json({ error: "Both Turkish and English content are required" }, 400, adminHeaders);
-      const media = Array.isArray(payload.media) ? payload.media : JSON.parse(String(existing.media_json || "[]"));
+      const existingMedia = JSON.parse(String(existing.media_json || "[]")) as Array<{ key?: string; hidden?: boolean }>;
+      const requestedMedia = (Array.isArray(payload.media) ? payload.media : existingMedia) as Array<{ key?: string; hidden?: boolean }>;
+      const shouldHideFallback = payload.hideFallbackVisual === true || (payload.hideFallbackVisual === undefined && existingMedia.some((item) => item?.hidden === true));
+      const media = shouldHideFallback ? [{ hidden: true }] : requestedMedia.filter((item) => item?.hidden !== true);
       const coverKey = Array.isArray(payload.media) ? (String(payload.coverKey || media[0]?.key || "") || null) : existing.cover_key;
       const result = await env.DB.prepare("UPDATE content SET status = ?, category = ?, project_id = ?, title_tr = ?, title_en = ?, body_tr = ?, body_en = ?, cover_key = ?, media_json = ?, event_start = ?, event_end = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(status, category, payload.projectId ?? existing.project_id, titleTr, titleEn, bodyTr, bodyEn, coverKey, JSON.stringify(media), payload.eventStart ?? existing.event_start, payload.eventEnd ?? existing.event_end, contentMatch[1]).run();
       if (result.meta.changes && Array.isArray(payload.media)) {
-        const previousMedia = JSON.parse(String(existing.media_json || "[]")) as Array<{ key?: string }>;
+        const previousMedia = existingMedia;
         const retainedKeys = new Set(media.map((item: { key?: string }) => item?.key).filter(Boolean));
         const obsoleteKeys = [...new Set([existing.cover_key, ...previousMedia.map((item) => item.key)].filter(Boolean))]
           .filter((key): key is string => typeof key === "string" && !retainedKeys.has(key));

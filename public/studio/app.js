@@ -86,14 +86,25 @@ function clearEditor() {
   editorContent("En").innerHTML = "";
 }
 
+function hasHiddenFallback(item) {
+  try { return JSON.parse(item?.media_json || "[]").some((media) => media?.hidden === true); } catch { return false; }
+}
+
 function renderExistingMedia(item) {
   mediaPreview.hidden = true;
   mediaPreview.innerHTML = "";
-  if (!item?.cover_key || !contentTypes[currentType].media) return;
-  const imageUrl = `/media/${encodeURIComponent(item.cover_key).replace(/%2F/g, "/")}`;
+  if (!contentTypes[currentType].media || !item) return;
+  const fallbackHidden = hasHiddenFallback(item);
+  if (!item.cover_key && currentType !== "work") return;
+  const imageUrl = item.cover_key ? `/media/${encodeURIComponent(item.cover_key).replace(/%2F/g, "/")}` : "";
+  const demoArtClass = { Photography: "photography", Collages: "collages", Drawings: "drawings", Films: "films", "Video art": "video-art" }[item.category] || "default";
   const state = removeExistingMedia
     ? `<p>Bu görsel, kaydettiğinizde kaldırılacak.</p><button type="button" data-undo-media>Vazgeç</button>`
-    : `<img src="${imageUrl}" alt="Mevcut görsel" /><div><p>Mevcut görsel</p><small>Yeni bir dosya seçerseniz bu görsel onunla değiştirilir.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`;
+    : item.cover_key
+      ? `<img src="${imageUrl}" alt="Mevcut görsel" /><div><p>Mevcut görsel</p><small>Yeni bir dosya seçerseniz bu görsel onunla değiştirilir.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`
+      : fallbackHidden
+        ? `<div><p>Görsel kaldırıldı</p><small>Bu çalışma için yeni bir dosya seçerek yeniden görsel ekleyebilirsin.</small></div>`
+        : `<div class="existing-media-art existing-media-art-${demoArtClass}" aria-hidden="true"></div><div><p>Mevcut demo görseli</p><small>Bu yer tutucu görsel kamu sayfasında görünür. Yeni bir dosya seçerek değiştirebilir veya kaldırabilirsin.</small><button type="button" data-remove-media>Görseli kaldır</button></div>`;
   mediaPreview.innerHTML = state;
   mediaPreview.hidden = false;
   mediaPreview.querySelector("[data-remove-media]")?.addEventListener("click", () => { removeExistingMedia = true; renderExistingMedia(item); });
@@ -279,7 +290,7 @@ async function submit(status) {
     if (!uploaded.ok) throw new Error("Görsel yüklenemedi.");
     return uploaded.json();
   }));
-  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media } : removeExistingMedia ? { media: [] } : {}) };
+  const payload = { ...common, type: currentType, category: currentType === "work" ? document.querySelector("#category").value : null, projectId: data.get("projectId") || null, eventStart: data.get("eventStart") || null, eventEnd: data.get("eventEnd") || null, ...(media.length ? { media, hideFallbackVisual: false } : removeExistingMedia ? { media: [], hideFallbackVisual: currentType === "work" } : {}) };
   const response = await fetch(editingItem ? `/studio/api/admin/content/${editingItem.id}` : "/studio/api/admin/content", { method: editingItem ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
