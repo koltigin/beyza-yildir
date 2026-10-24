@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social);
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-footer-compact");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-footer-align");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   let language = localStorage.getItem("beyza-language") || "tr";
