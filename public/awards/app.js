@@ -3,7 +3,8 @@
   let awards = [];
   const escapeHtml = (value) => String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
   const plainText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  const language = () => localStorage.getItem("beyza-language") || "tr";
+  const urlLocale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1];
+  const language = () => urlLocale || localStorage.getItem("beyza-language") || "tr";
   const render = () => {
     const currentLanguage = language();
     if (!awards.length) { list.innerHTML = `<p class="archive-empty">${currentLanguage === "tr" ? "Henüz yayınlanmış bir ödül eklenmedi." : "No published awards have been added yet."}</p>`; return; }

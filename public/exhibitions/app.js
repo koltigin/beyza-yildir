@@ -7,7 +7,7 @@ const plainText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replac
 const formatDate = (value, locale) => value ? new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(`${value}T12:00:00`)) : "";
 
 function render() {
-  const language = localStorage.getItem("beyza-language") || "tr";
+  const language = localePrefix;
   if (!exhibitions.length) {
     list.innerHTML = `<p class="archive-empty">${language === "tr" ? "Henüz yayınlanmış etkinlik yok." : "There are no published events yet."}</p>`;
     return;

@@ -18,7 +18,7 @@
     }).join("");
   };
   let works = [];
-  let language = localStorage.getItem("beyza-language") || "tr";
+  let language = locale;
   fetch(`/api/public/works?category=${encodeURIComponent(category)}`).then((response) => response.ok ? response.json() : Promise.reject()).then((data) => { works = data.works || []; render(works, language); }).catch(() => render([], language));
   document.addEventListener("beyza-language-change", (event) => { language = event.detail.language; render(works, language); });
 })();

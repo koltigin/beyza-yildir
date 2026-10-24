@@ -24,14 +24,14 @@ let activeCategory = "All";
 const $ = (selector) => document.querySelector(selector);
 
 function localizedPath(path, locale = language) {
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `/${locale}${cleanPath}`;
+  const url = new URL(path, location.origin);
+  const cleanPath = url.pathname.replace(/^\/(?:tr|en)(?=\/|$)/, "") || "/";
+  return `/${locale}${cleanPath}${url.search}${url.hash}`;
 }
 
 function updateLocalizedLinks() {
   document.querySelectorAll(".site-nav a").forEach((link) => {
-    const destination = new URL(link.href).pathname;
-    link.href = localizedPath(destination);
+    link.href = localizedPath(link.href);
   });
   ["photography", "collages", "drawings", "films", "video-art"].forEach((id) => {
     const link = document.getElementById(id);

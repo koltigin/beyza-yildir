@@ -1,14 +1,14 @@
 (() => {
-  const footerMarkup = (contact, socialLabel) => `<p class="footer-name">Beyza Yıldır</p><a class="footer-contact" href="/contact/">${contact}</a><nav class="social-icons" aria-label="${socialLabel}"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" class="social-fill"/></svg></a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer" aria-label="Vimeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c2.2-2.6 4.8-3.9 6.5-3.9 2 0 2.4 1.5 3 4.7.7 3.8 1.1 5.3 1.7 5.3.7 0 2.1-1.7 4.4-5.1 1.1-1.7-.1-2.5-2.3-1.7.9-3.1 2.7-4.6 5-4.6 2.2 0 2.7 1.5 1.6 4.3-2.5 5.8-7.5 12.4-10.7 12.4-2.4 0-3.4-2-4.3-5.8C7 10.6 6.6 9.3 5.9 9.3c-.6 0-1.6.7-2.9 1.9Z"/></svg></a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="m10 9 5 3-5 3Z" class="social-fill"/></svg></a></nav><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
+  const footerMarkup = (contact, socialLabel, contactHref) => `<p class="footer-name">Beyza Yıldır</p><a class="footer-contact" href="${contactHref}">${contact}</a><nav class="social-icons" aria-label="${socialLabel}"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" class="social-fill"/></svg></a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer" aria-label="Vimeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c2.2-2.6 4.8-3.9 6.5-3.9 2 0 2.4 1.5 3 4.7.7 3.8 1.1 5.3 1.7 5.3.7 0 2.1-1.7 4.4-5.1 1.1-1.7-.1-2.5-2.3-1.7.9-3.1 2.7-4.6 5-4.6 2.2 0 2.7 1.5 1.6 4.3-2.5 5.8-7.5 12.4-10.7 12.4-2.4 0-3.4-2-4.3-5.8C7 10.6 6.6 9.3 5.9 9.3c-.6 0-1.6.7-2.9 1.9Z"/></svg></a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="m10 9 5 3-5 3Z" class="social-fill"/></svg></a></nav><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
   const renderSharedFooter = (language) => {
     const footer = document.querySelector("footer");
     if (!footer) return;
     const copy = language === "en" ? { contact: "Contact", social: "Social media" } : { contact: "İletişim", social: "Sosyal medya" };
     footer.className = "site-footer";
-    footer.innerHTML = footerMarkup(copy.contact, copy.social);
+    footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-locales");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-locale-fix");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -38,11 +38,14 @@
   }
   const urlLocale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1];
   let language = urlLocale || localStorage.getItem("beyza-language") || "tr";
-  const localizedPath = (path, locale = language) => `/${locale}${path.startsWith("/") ? path : `/${path}`}`;
+  const localizedPath = (path, locale = language) => {
+    const url = new URL(path, location.origin);
+    const cleanPath = url.pathname.replace(/^\/(?:tr|en)(?=\/|$)/, "") || "/";
+    return `/${locale}${cleanPath}${url.search}${url.hash}`;
+  };
   const updateLocalizedLinks = () => {
-    document.querySelectorAll(".page-menu a").forEach((link) => {
-      const destination = new URL(link.href).pathname;
-      link.href = localizedPath(destination);
+    document.querySelectorAll("a[href]").forEach((link) => {
+      if (new URL(link.href, location.origin).origin === location.origin) link.href = localizedPath(link.href);
     });
   };
   const setLanguage = (next) => {
