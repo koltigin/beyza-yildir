@@ -112,8 +112,8 @@ export default {
       const category = url.searchParams.get("category");
       if (category && !allowedCategories.has(category)) return json({ error: "Unknown category" }, 400);
       const statement = category
-        ? env.DB.prepare("SELECT id, category, title_tr, title_en, body_tr, body_en, cover_key, created_at FROM content WHERE status = 'published' AND type = 'work' AND category = ? ORDER BY created_at DESC").bind(category)
-        : env.DB.prepare("SELECT id, category, title_tr, title_en, body_tr, body_en, cover_key, created_at FROM content WHERE status = 'published' AND type = 'work' ORDER BY created_at DESC");
+        ? env.DB.prepare("SELECT id, category, title_tr, title_en, body_tr, body_en, cover_key, media_json, created_at FROM content WHERE status = 'published' AND type = 'work' AND category = ? ORDER BY created_at DESC").bind(category)
+        : env.DB.prepare("SELECT id, category, title_tr, title_en, body_tr, body_en, cover_key, media_json, created_at FROM content WHERE status = 'published' AND type = 'work' ORDER BY created_at DESC");
       const { results } = await statement.all();
       return json({ works: results });
     }
@@ -136,6 +136,12 @@ export default {
     if (url.pathname === "/api/public/awards" && request.method === "GET") {
       const { results } = await env.DB.prepare("SELECT id, title_tr, title_en, body_tr, body_en, award_year, created_at FROM awards WHERE status = 'published' ORDER BY award_year DESC, created_at DESC").all();
       return json({ awards: results });
+    }
+
+    const publicAwardMatch = url.pathname.match(/^\/api\/public\/award\/([0-9a-f-]+)$/i);
+    if (publicAwardMatch && request.method === "GET") {
+      const award = await env.DB.prepare("SELECT id, title_tr, title_en, body_tr, body_en, award_year, created_at FROM awards WHERE id = ? AND status = 'published'").bind(publicAwardMatch[1]).first();
+      return award ? json({ award }) : json({ error: "Not found" }, 404);
     }
 
     if (url.pathname === "/api/contact" && request.method === "POST") {

@@ -14,9 +14,11 @@
     archive.innerHTML = works.map((work) => {
       const mediaUrl = work.cover_key ? `/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")}` : "";
       const isVideo = /\.(mp4|webm|mov|ogv)$/i.test(String(work.cover_key || ""));
-      const image = mediaUrl && !isVideo ? ` style="background-image:url('${mediaUrl}')"` : "";
+      let thumbnail = "";
+      try { thumbnail = JSON.parse(work.media_json || "[]").find((media) => media.role === "thumbnail" && media.videoKey === work.cover_key)?.key || ""; } catch (_) {}
+      const image = mediaUrl && (!isVideo || thumbnail) ? ` style="background-image:url('${isVideo ? `/media/${encodeURIComponent(thumbnail).replace(/%2F/g, "/")}` : mediaUrl}')"` : "";
       const workTitle = language === "tr" ? work.title_tr : work.title_en;
-      return `<a class="tile" href="/${locale}/w/${encodeURIComponent(work.id)}"><figure${image}>${isVideo ? `<video src="${mediaUrl}" muted playsinline preload="metadata"></video>` : ""}</figure><p>${escapeHtml(work.category)} / ${escapeHtml(String(work.created_at).slice(0, 4))}</p><h2>${escapeHtml(workTitle)}</h2></a>`;
+      return `<a class="tile" href="/${locale}/w/${encodeURIComponent(work.id)}"><figure${image}>${isVideo && !thumbnail ? `<video src="${mediaUrl}" muted autoplay loop playsinline preload="metadata"></video>` : ""}</figure><p>${escapeHtml(work.category)} / ${escapeHtml(String(work.created_at).slice(0, 4))}</p><h2>${escapeHtml(workTitle)}</h2></a>`;
     }).join("");
   };
   let works = [];

@@ -69,7 +69,12 @@ function renderWorks() {
     if (work.cover_key) {
       art.classList.add("has-image");
       const mediaUrl = `/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")}`;
-      if (/\.(mp4|webm|mov|ogv)$/i.test(work.cover_key)) art.insertAdjacentHTML("afterbegin", `<video class="work-preview-video" src="${mediaUrl}" muted playsinline preload="metadata"></video>`);
+      if (/\.(mp4|webm|mov|ogv)$/i.test(work.cover_key)) {
+        let thumbnail = "";
+        try { thumbnail = JSON.parse(work.media_json || "[]").find((media) => media.role === "thumbnail" && media.videoKey === work.cover_key)?.key || ""; } catch (_) {}
+        if (thumbnail) art.style.backgroundImage = `url(/media/${encodeURIComponent(thumbnail).replace(/%2F/g, "/")})`;
+        else art.insertAdjacentHTML("afterbegin", `<video class="work-preview-video" src="${mediaUrl}" muted autoplay loop playsinline preload="metadata"></video>`);
+      }
       else art.style.backgroundImage = `url(${mediaUrl})`;
     }
     art.querySelector(".work-index").textContent = String(index + 1).padStart(2, "0");
@@ -122,6 +127,7 @@ async function hydratePublishedContent() {
           category: item.category,
           id: item.id,
           cover_key: item.cover_key,
+          media_json: item.media_json,
           year: String(item.created_at || "").slice(0, 4),
           tr: item.title_tr,
           en: item.title_en,

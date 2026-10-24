@@ -286,6 +286,30 @@ async function prepareMedia(file) {
   return optimiseImage(file);
 }
 
+async function makeVideoThumbnail(file) {
+  const video = document.createElement("video");
+  const objectUrl = URL.createObjectURL(file);
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  try {
+    const metadata = new Promise((resolve, reject) => { video.onloadedmetadata = resolve; video.onerror = () => reject(new Error("Video karesi okunamadı.")); });
+    video.src = objectUrl;
+    video.load();
+    await metadata;
+    video.currentTime = Math.min(Math.max(.15, video.duration * .15), Math.max(.15, video.duration - .15));
+    await new Promise((resolve, reject) => { video.onseeked = resolve; video.onerror = () => reject(new Error("Video karesi okunamadı.")); });
+    const scale = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", .82));
+    if (!blob) throw new Error("Video karesi oluşturulamadı.");
+    return blob;
+  } finally { URL.revokeObjectURL(objectUrl); }
+}
+
 async function uploadMedia(blob) {
   const uploaded = await fetch("/studio/api/admin/media", { method: "POST", headers: { "content-type": blob.type || "image/webp" }, body: blob });
   if (!uploaded.ok) {
@@ -409,7 +433,20 @@ async function submit(status) {
     return;
   }
   const files = [...(form.querySelector('input[type="file"]')?.files || [])];
-  const uploadedMedia = await Promise.all(files.map(async (file) => uploadMedia(await prepareMedia(file))));
+  const uploadGroups = await Promise.all(files.map(async (file) => {
+    const uploaded = await uploadMedia(await prepareMedia(file));
+    if (!file.type.startsWith("video/")) return [uploaded];
+    try {
+      const thumbnail = await uploadMedia(await makeVideoThumbnail(file));
+      return [uploaded, { ...thumbnail, role: "thumbnail", videoKey: uploaded.key }];
+    } catch (_) {
+      // A rare unsupported codec still publishes the video; its card uses a
+      // muted moving preview until the author replaces it with an MP4/WebM.
+      notify("Video yüklendi; önizleme karesi oluşturulamadı. MP4 veya WebM ile tekrar deneyebilirsiniz.", "error");
+      return [uploaded];
+    }
+  }));
+  const uploadedMedia = uploadGroups.flat();
   const bodyMediaKeys = new Set([...mediaKeysInHtml(bodyTr), ...mediaKeysInHtml(bodyEn)]);
   const retainedInlineMedia = currentMedia.filter((media) => bodyMediaKeys.has(media.key));
   let nextMedia = uniqueMedia(removeExistingMedia ? inlineMedia : uploadedMedia.length ? [...uploadedMedia, ...retainedInlineMedia, ...inlineMedia] : [...currentMedia, ...inlineMedia]);
