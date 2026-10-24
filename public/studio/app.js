@@ -17,6 +17,11 @@ editorNotice.className = "editor-notice";
 editorNotice.hidden = true;
 editorNotice.setAttribute("role", "status");
 document.querySelector("#editor-help").after(editorNotice);
+const toastRegion = document.createElement("div");
+toastRegion.className = "studio-toasts";
+toastRegion.setAttribute("aria-live", "polite");
+toastRegion.setAttribute("aria-label", "İşlem bildirimleri");
+document.body.append(toastRegion);
 let currentType = "work";
 let editingItem = null;
 let managedItems = new Map();
@@ -38,14 +43,21 @@ awardYearField.hidden = true;
 awardYearField.innerHTML = 'Ödül yılı <input name="awardYear" inputmode="numeric" maxlength="4" placeholder="2026" />';
 eventFields.after(awardYearField);
 
-function notify(message) {
+function notify(message, tone = "success") {
+  const toast = document.createElement("p");
+  toast.className = `studio-toast studio-toast-${tone}`;
+  toast.textContent = message;
+  toastRegion.append(toast);
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+  setTimeout(() => {
+    toast.classList.remove("is-visible");
+    setTimeout(() => toast.remove(), 250);
+  }, 3600);
   if (!editor.hidden) {
     editorNotice.textContent = message;
     editorNotice.hidden = false;
     return;
   }
-  const output = document.querySelector(".empty");
-  if (output) output.textContent = message;
 }
 
 function escapeHtml(value) {
@@ -143,12 +155,16 @@ function renderFilteredContent() {
     if (item) openEditor(item.type, item).catch((error) => notify(error.message));
   }));
   target.querySelectorAll("[data-toggle-id]").forEach((button) => button.addEventListener("click", async () => {
-    await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) });
+    const response = await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.toggleId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: button.dataset.nextStatus }) });
+    if (!response.ok) { notify("İçerik durumu değiştirilemedi.", "error"); return; }
+    notify(button.dataset.nextStatus === "published" ? "İçerik yayınlandı." : "İçerik taslağa alındı.");
     loadPublishedContent();
   }));
   target.querySelectorAll("[data-delete-id]").forEach((button) => button.addEventListener("click", async () => {
     if (!confirm("Bu içerik silinsin mi?")) return;
-    await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.deleteId}`, { method: "DELETE" });
+    const response = await fetch(`/studio/api/admin/${button.dataset.resource}/${button.dataset.deleteId}`, { method: "DELETE" });
+    if (!response.ok) { notify("İçerik silinemedi.", "error"); return; }
+    notify("İçerik silindi.");
     loadPublishedContent();
   }));
 }
@@ -231,6 +247,6 @@ async function submit(status) {
   if (!response.ok) throw new Error("Yayınlama bağlantısı kurulamadı.");
 }
 
-document.querySelector("#save-draft").addEventListener("click", async () => { try { await submit("draft"); notify(currentType === "about" ? "Hakkında sayfası kaydedildi." : "Taslak kaydedildi."); loadPublishedContent(); } catch (error) { notify(error.message || "Taslak kaydedilemedi."); } });
-form.addEventListener("submit", async (event) => { event.preventDefault(); try { await submit("published"); notify(currentType === "about" ? "Hakkında sayfası güncellendi." : "İçerik yayınlandı."); loadPublishedContent(); } catch (error) { notify(error.message || "İçerik yayınlanamadı."); } });
+document.querySelector("#save-draft").addEventListener("click", async () => { try { const wasEditing = Boolean(editingItem); await submit("draft"); notify(currentType === "about" ? "Hakkında sayfası kaydedildi." : wasEditing ? "İçerik düzenlendi ve taslak olarak kaydedildi." : "Taslak kaydedildi."); loadPublishedContent(); } catch (error) { notify(error.message || "Taslak kaydedilemedi.", "error"); } });
+form.addEventListener("submit", async (event) => { event.preventDefault(); try { const wasEditing = Boolean(editingItem); await submit("published"); notify(currentType === "about" ? "Hakkında sayfası güncellendi." : wasEditing ? "İçerik düzenlendi ve yayınlandı." : "İçerik yayınlandı."); loadPublishedContent(); } catch (error) { notify(error.message || "İçerik yayınlanamadı.", "error"); } });
 loadPublishedContent();

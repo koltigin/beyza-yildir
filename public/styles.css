@@ -54,6 +54,9 @@
 .site-footer{grid-template-columns:1fr auto auto 1fr;justify-items:center;align-items:center;gap:.6rem;padding:1rem var(--space);text-align:center}.site-footer .footer-name{grid-column:1/-1}.site-footer .footer-contact{grid-column:2;margin:0!important;justify-self:end}.site-footer .social-icons{grid-column:3;justify-self:start}.site-footer .copyright{grid-column:1/-1;margin:.2rem 0 0;text-align:center}
 @media(max-width:700px){.category-band{grid-template-columns:repeat(2,minmax(0,1fr))}.site-footer{grid-template-columns:1fr auto auto 1fr;gap:.55rem;padding:1rem 1.25rem}.site-footer .footer-contact{grid-column:2}.site-footer .social-icons{grid-column:3}.site-footer .copyright{grid-column:1/-1;margin-top:.15rem}}
 
+/* Long category names must stay inside their mobile tiles. */
+@media(max-width:700px){.category-band a{min-width:0;font-size:clamp(.88rem,4.4vw,1.05rem);line-height:.95;overflow-wrap:anywhere}}
+
 /* The home language switcher uses the same explicit active segment as inner pages. */
 .language-toggle{display:grid;grid-template-columns:repeat(2,1fr);min-height:2.35rem;padding:0;overflow:hidden;border-color:var(--yellow);background:var(--yellow);color:#0a0b08}
 .language-toggle span{display:grid;place-items:center;min-width:2.35rem;padding:0 .55rem;color:#0a0b08}
