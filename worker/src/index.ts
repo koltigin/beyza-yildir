@@ -25,6 +25,28 @@ function isSafeImage(request: Request) {
 function validEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+function escapeHtml(value: unknown) {
+  return String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character] || character));
+}
+function plainText(value: unknown, limit = 180) {
+  const text = String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return text.length > limit ? `${text.slice(0, limit).trimEnd()}…` : text;
+}
+function publicContentPath(type: unknown, id: unknown) {
+  const prefix = type === "work" ? "w" : type === "exhibition" ? "e" : "p";
+  return `/${prefix}/${id}`;
+}
+function sharePage(item: Record<string, unknown>, env: Env) {
+  const path = publicContentPath(item.type, item.id);
+  const canonical = `${env.PUBLIC_ORIGIN}${path}`;
+  const title = String(item.title_tr || item.title_en || "Beyza Yıldır");
+  const titleEn = String(item.title_en || item.title_tr || "Beyza Yıldır");
+  const description = plainText(item.body_tr || item.body_en);
+  const fallback = item.type === "post" ? "blog" : item.type === "exhibition" ? "exhibitions" : "works";
+  const image = item.cover_key ? `${env.PUBLIC_ORIGIN}/media/${String(item.cover_key).split("/").map(encodeURIComponent).join("/")}` : `${env.PUBLIC_ORIGIN}/og/${fallback}.png`;
+  const viewer = item.type === "work" ? `/work/?id=${encodeURIComponent(String(item.id))}` : item.type === "exhibition" ? `/event/?id=${encodeURIComponent(String(item.id))}` : `/post/?id=${encodeURIComponent(String(item.id))}`;
+  return new Response(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)} — Beyza Yıldır</title><meta name="description" content="${escapeHtml(description)}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="article"><meta property="og:site_name" content="Beyza Yıldır"><meta property="og:locale" content="tr_TR"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${image}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(titleEn)}"><meta name="twitter:description" content="${escapeHtml(plainText(item.body_en || item.body_tr))}"><meta name="twitter:image" content="${image}"></head><body><main><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><p><a href="${viewer}">Beyza Yıldır — içeriği görüntüle</a></p></main><script>location.replace(${JSON.stringify(viewer)})</script></body></html>`, { headers: { "content-type": "text/html; charset=UTF-8", "cache-control": "public, max-age=300" } });
+}
 async function readJson(request: Request) {
   try { return await request.json<Record<string, unknown>>(); } catch { return null; }
 }
@@ -33,6 +55,19 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: { ...publicHeaders, "access-control-allow-methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS", "access-control-allow-headers": "content-type, Cf-Access-Jwt-Assertion" } });
+
+    const sharedContentMatch = url.pathname.match(/^\/(p|w|e)\/([0-9a-f-]+)\/?$/i);
+    if (sharedContentMatch && request.method === "GET") {
+      const expectedType = sharedContentMatch[1] === "w" ? "work" : sharedContentMatch[1] === "e" ? "exhibition" : "post";
+      const item = await env.DB.prepare("SELECT id, type, title_tr, title_en, body_tr, body_en, cover_key FROM content WHERE id = ? AND type = ? AND status = 'published'").bind(sharedContentMatch[2], expectedType).first<Record<string, unknown>>();
+      return item ? sharePage(item, env) : new Response("Not found", { status: 404 });
+    }
+
+    if (url.pathname === "/sitemap-content.xml" && request.method === "GET") {
+      const { results } = await env.DB.prepare("SELECT id, type, updated_at FROM content WHERE status = 'published' ORDER BY updated_at DESC").all<Record<string, unknown>>();
+      const urls = results.map((item) => `<url><loc>${env.PUBLIC_ORIGIN}${publicContentPath(item.type, item.id)}</loc><lastmod>${escapeHtml(String(item.updated_at || "").slice(0, 10))}</lastmod></url>`).join("");
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, { headers: { "content-type": "application/xml; charset=UTF-8", "cache-control": "public, max-age=3600" } });
+    }
 
     if (url.pathname === "/api/public/works" && request.method === "GET") {
       const category = url.searchParams.get("category");

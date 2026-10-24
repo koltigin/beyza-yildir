@@ -13,7 +13,7 @@
     archive.innerHTML = works.map((work) => {
       const image = work.cover_key ? ` style="background-image:url('/media/${encodeURIComponent(work.cover_key).replace(/%2F/g, "/")}')"` : "";
       const workTitle = language === "tr" ? work.title_tr : work.title_en;
-      return `<a class="tile" href="../work/?id=${encodeURIComponent(work.id)}"><figure${image}></figure><p>${escapeHtml(work.category)} / ${escapeHtml(String(work.created_at).slice(0, 4))}</p><h2>${escapeHtml(workTitle)}</h2></a>`;
+      return `<a class="tile" href="../w/${encodeURIComponent(work.id)}"><figure${image}></figure><p>${escapeHtml(work.category)} / ${escapeHtml(String(work.created_at).slice(0, 4))}</p><h2>${escapeHtml(workTitle)}</h2></a>`;
     }).join("");
   };
   let works = [];

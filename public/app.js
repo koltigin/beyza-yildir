@@ -47,7 +47,7 @@ function renderWorks() {
     node.querySelector("h3").textContent = work[language];
     node.querySelector(".work-year").textContent = work.year;
     const categoryPath = { Photography: "photography", Collages: "collages", Drawings: "drawings", Films: "films", "Video art": "video-art" }[work.category];
-    node.querySelector(".work-link").href = work.id ? `/work/?id=${encodeURIComponent(work.id)}` : `/${categoryPath}/`;
+    node.querySelector(".work-link").href = work.id ? `/w/${encodeURIComponent(work.id)}` : `/${categoryPath}/`;
     grid.append(node);
   });
 }
@@ -65,7 +65,7 @@ function renderCategories() {
 }
 function renderPosts() {
   const list = $("#posts"); const template = $("#post-template"); list.innerHTML = "";
-  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = excerpt(post[`${language}Summary`]); node.querySelector(".post-link").href = post.id ? `/post/?id=${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
+  posts.forEach((post) => { const node = template.content.cloneNode(true); node.querySelector(".post-date").textContent = post.date; node.querySelector("h3").textContent = post[language]; node.querySelector(".post-summary").textContent = excerpt(post[`${language}Summary`]); node.querySelector(".post-link").href = post.id ? `/p/${encodeURIComponent(post.id)}` : "/post/"; list.append(node); });
 }
 function changeLanguage() {
   language = language === "tr" ? "en" : "tr";

@@ -5,7 +5,11 @@ workers_dev = false
 
 routes = [
   { pattern = "yildirbeyza.com/api/*", zone_name = "yildirbeyza.com" },
-  { pattern = "yildirbeyza.com/media/*", zone_name = "yildirbeyza.com" }
+  { pattern = "yildirbeyza.com/media/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/p/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/w/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/e/*", zone_name = "yildirbeyza.com" },
+  { pattern = "yildirbeyza.com/sitemap-content.xml", zone_name = "yildirbeyza.com" }
 ]
 
 [vars]

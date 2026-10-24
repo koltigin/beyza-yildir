@@ -18,7 +18,7 @@ function render() {
     const dates = end ? `${start} — ${end}` : start;
     const title = language === "tr" ? event.title_tr : event.title_en;
     const summary = plainText(language === "tr" ? event.body_tr : event.body_en);
-    return `<a class="entry" href="../event/?id=${encodeURIComponent(event.id)}"><time>${escapeHtml(dates)}</time><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(summary)}</p></div></a>`;
+    return `<a class="entry" href="../e/${encodeURIComponent(event.id)}"><time>${escapeHtml(dates)}</time><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(summary)}</p></div></a>`;
   }).join("");
 }
 
