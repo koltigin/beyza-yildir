@@ -310,6 +310,15 @@ async function makeVideoThumbnail(file) {
   } finally { URL.revokeObjectURL(objectUrl); }
 }
 
+async function makeStoredVideoThumbnail(key) {
+  const source = await fetch(`/media/${encodeURIComponent(key).replace(/%2F/g, "/")}`);
+  if (!source.ok) throw new Error("Mevcut video okunamadı.");
+  const blob = await source.blob();
+  const name = String(key).split("/").pop() || "video.mov";
+  const video = new File([blob], name, { type: blob.type || "video/quicktime" });
+  return uploadMedia(await makeVideoThumbnail(video));
+}
+
 async function uploadMedia(blob) {
   const uploaded = await fetch("/studio/api/admin/media", { method: "POST", headers: { "content-type": blob.type || "image/webp" }, body: blob });
   if (!uploaded.ok) {
@@ -451,6 +460,19 @@ async function submit(status) {
   const retainedInlineMedia = currentMedia.filter((media) => bodyMediaKeys.has(media.key));
   let nextMedia = uniqueMedia(removeExistingMedia ? inlineMedia : uploadedMedia.length ? [...uploadedMedia, ...retainedInlineMedia, ...inlineMedia] : [...currentMedia, ...inlineMedia]);
   let shouldUpdateMedia = uploadedMedia.length > 0 || inlineMedia.length > 0 || removeExistingMedia;
+  const existingVideo = !removeExistingMedia && editingItem?.cover_key && isVideoKey(editingItem.cover_key) ? editingItem.cover_key : null;
+  const hasVideoThumbnail = existingVideo && nextMedia.some((media) => media.role === "thumbnail" && media.videoKey === existingVideo);
+  if (existingVideo && !hasVideoThumbnail && !files.some((file) => file.type.startsWith("video/"))) {
+    try {
+      const thumbnail = await makeStoredVideoThumbnail(existingVideo);
+      nextMedia = uniqueMedia([...nextMedia, { ...thumbnail, role: "thumbnail", videoKey: existingVideo }]);
+      shouldUpdateMedia = true;
+      notify("Video için önizleme karesi oluşturuldu.");
+    } catch (_) {
+      // Existing videos still use a muted moving preview if their codec cannot
+      // be decoded in the current browser.
+    }
+  }
   if (currentType === "post" && !nextMedia.some((media) => media.role !== "share-tr" && media.role !== "share-en")) {
     const shareCards = await Promise.all(["tr", "en"].map(async (locale) => {
       const title = locale === "tr" ? common.titleTr : common.titleEn;

@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-award-video-header");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-detail-spacing");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");

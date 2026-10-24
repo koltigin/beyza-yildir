@@ -15,6 +15,7 @@ function renderRelatedPosts(currentId, posts) {
 }
 
 if (contentId && contentRoot) {
+  document.body.classList.add("content-detail");
   fetch(`/api/public/content/${encodeURIComponent(contentId)}`)
     .then((response) => response.ok ? response.json() : Promise.reject())
     .then(({ content }) => {
