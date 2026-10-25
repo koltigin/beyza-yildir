@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261024-detail-spacing");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261025-desktop-nav");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -64,6 +64,7 @@
       element.innerHTML = element.matches("h1") ? `${copy}<em>.</em>` : copy;
     });
     document.querySelectorAll("[data-language]").forEach((element) => { element.hidden = element.dataset.language !== language; });
+    document.querySelectorAll(".bilingual-about section").forEach((section) => { section.hidden = section.lang !== language; });
     toggle.setAttribute("aria-pressed", String(language === "en"));
     toggle.setAttribute("aria-label", language === "tr" ? "Aktif dil Türkçe. İngilizceye geç." : "Current language English. Switch to Turkish.");
     toggle.innerHTML = `<span class="${language === "tr" ? "is-active" : ""}">TR</span><span class="${language === "en" ? "is-active" : ""}">EN</span>`;

@@ -1,5 +1,4 @@
 const form = document.querySelector("#contact-form");
-const footer = document.querySelector("footer");
 const status = document.querySelector("#form-status");
 const locale = location.pathname.match(/^\/(tr|en)(?:\/|$)/)?.[1] || "tr";
 const copy = locale === "en" ? {
@@ -13,43 +12,6 @@ labels[0].childNodes[0].textContent = `${copy.name} `; labels[1].childNodes[0].t
 form.querySelector("button[type=submit]").textContent = copy.send;
 status.textContent = copy.ready;
 const footerMarkup = `<p class="footer-name">Beyza Yıldır</p><a class="footer-contact" href="/${locale}/contact/">${copy.contact}</a><nav class="social-icons" aria-label="${locale === "en" ? "Social media" : "Sosyal medya"}"><a href="https://www.instagram.com/yildirworks" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" class="social-fill"/></svg></a><a href="https://vimeo.com/beyzayildir" target="_blank" rel="noreferrer" aria-label="Vimeo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c2.2-2.6 4.8-3.9 6.5-3.9 2 0 2.4 1.5 3 4.7.7 3.8 1.1 5.3 1.7 5.3.7 0 2.1-1.7 4.4-5.1 1.1-1.7-.1-2.5-2.3-1.7.9-3.1 2.7-4.6 5-4.6 2.2 0 2.7 1.5 1.6 4.3-2.5 5.8-7.5 12.4-10.7 12.4-2.4 0-3.4-2-4.3-5.8C7 10.6 6.6 9.3 5.9 9.3c-.6 0-1.6.7-2.9 1.9Z"/></svg></a><a href="https://youtube.com/@beyzayildir" target="_blank" rel="noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="m10 9 5 3-5 3Z" class="social-fill"/></svg></a></nav><p class="copyright">© ${new Date().getFullYear()} Beyza Yıldır</p>`;
-
-const header = document.querySelector(".bar");
-const back = header?.querySelector(".back");
-if (header && back) {
-  const menuToggle = document.createElement("button");
-  menuToggle.type = "button";
-  menuToggle.className = "page-menu-toggle";
-  menuToggle.textContent = copy.menu;
-  menuToggle.setAttribute("aria-expanded", "false");
-  menuToggle.setAttribute("aria-controls", "page-menu");
-  const pageMenu = document.createElement("nav");
-  pageMenu.id = "page-menu";
-  pageMenu.className = "page-menu";
-  pageMenu.setAttribute("aria-label", "Site navigation");
-  pageMenu.innerHTML = `<a href="/${locale}/">${copy.home}</a><a href="/${locale}/about/">${locale === "en" ? "About" : "Hakkında"}</a><a href="/${locale}/#works">${locale === "en" ? "Works" : "Çalışmalar"}</a><a href="/${locale}/blog/">Blog</a><a href="/${locale}/exhibitions/">${locale === "en" ? "Exhibitions" : "Sergiler"}</a><a href="/${locale}/awards/">${locale === "en" ? "Awards" : "Ödüller"}</a><a href="/${locale}/contact/">${copy.contact}</a>`;
-  back.replaceWith(menuToggle);
-  header.after(pageMenu);
-  menuToggle.addEventListener("click", () => {
-    const open = menuToggle.getAttribute("aria-expanded") === "true";
-    menuToggle.setAttribute("aria-expanded", String(!open));
-    pageMenu.classList.toggle("is-open", !open);
-  });
-}
-
-const languageToggle = document.querySelector(".page-language-toggle");
-languageToggle.innerHTML = `<span class="${locale === "tr" ? "is-active" : ""}">TR</span><span class="${locale === "en" ? "is-active" : ""}">EN</span>`;
-languageToggle.addEventListener("click", () => {
-  const next = locale === "tr" ? "en" : "tr";
-  localStorage.setItem("beyza-language", next);
-  const currentPath = location.pathname.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
-  location.assign(`/${next}${currentPath}${location.search}${location.hash}`);
-});
-
-if (footer) {
-  footer.className = "site-footer";
-  footer.innerHTML = footerMarkup;
-}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
