@@ -8,7 +8,7 @@
     footer.innerHTML = footerMarkup(copy.contact, copy.social, localizedPath("/contact/", language));
   };
   const publicStyles = document.querySelector('link[href*="pages.css"]');
-  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261025-desktop-nav");
+  if (publicStyles) publicStyles.setAttribute("href", "/pages.css?v=20261025-desktop-nav-order");
   const toggle = document.querySelector(".page-language-toggle");
   if (!toggle) return;
   const actions = document.querySelector(".page-actions");
@@ -36,7 +36,10 @@
     pageMenu.setAttribute("aria-label", "Site navigation");
     pageMenu.innerHTML = '<a href="/about/" data-tr="Hakkında" data-en="About">Hakkında</a><a href="/blog/" data-tr="Blog" data-en="Blog">Blog</a><a href="/photography/" data-tr="Fotoğraf" data-en="Photography">Fotoğraf</a><a href="/collages/" data-tr="Kolajlar" data-en="Collages">Kolajlar</a><a href="/drawings/" data-tr="Çizimler" data-en="Drawings">Çizimler</a><a href="/films/" data-tr="Filmler" data-en="Films">Filmler</a><a href="/video-art/" data-tr="Video sanatı" data-en="Video art">Video sanatı</a><a href="/awards/" data-tr="Ödüller" data-en="Awards">Ödüller</a><a href="/contact/" data-tr="İletişim" data-en="Contact">İletişim</a>';
     actions.remove();
-    header.append(menuToggle, pageMenu);
+    // Keep the desktop grid in the same visual order as the homepage:
+    // wordmark → navigation → language switcher. The menu button only joins
+    // that layout below the mobile breakpoint.
+    header.replaceChildren(logo, pageMenu, toggle, menuToggle);
     menuToggle.addEventListener("click", () => {
       const open = menuToggle.getAttribute("aria-expanded") === "true";
       menuToggle.setAttribute("aria-expanded", String(!open));
