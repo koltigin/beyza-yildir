@@ -17,6 +17,7 @@ routes = [
 
 [vars]
 PUBLIC_ORIGIN = "https://yildirbeyza.com"
+RESEND_FROM = "Beyza Yıldır <contact@yildirbeyza.com>"
 
 [[d1_databases]]
 binding = "DB"
