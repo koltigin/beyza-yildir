@@ -93,6 +93,8 @@
   if (publicPath === "/blog") {
     const list = document.querySelector(".list");
     let posts = [];
+    let currentPage = 1;
+    const pageSize = 10;
     const escapeHtml = (value) => String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
     const plainText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     const renderPosts = () => {
@@ -100,7 +102,13 @@
         list.innerHTML = `<p class="archive-empty">${language === "tr" ? "Henüz yayınlanmış yazı yok." : "There are no published posts yet."}</p>`;
         return;
       }
-      list.innerHTML = posts.map((post) => { const copy = plainText(language === "tr" ? post.body_tr : post.body_en); const summary = copy.length > 118 ? `${copy.slice(0, 118).trimEnd()}…` : copy; return `<a class="entry" href="${localizedPath(`/p/${encodeURIComponent(post.id)}`)}"><time>${escapeHtml(String(post.created_at || "").slice(0, 10))}</time><div><h2>${escapeHtml(language === "tr" ? post.title_tr : post.title_en)}</h2><p>${escapeHtml(summary)}</p></div></a>`; }).join("");
+      const pageCount = Math.ceil(posts.length / pageSize);
+      currentPage = Math.min(currentPage, pageCount);
+      const visiblePosts = posts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+      const entries = visiblePosts.map((post) => { const copy = plainText(language === "tr" ? post.body_tr : post.body_en); const summary = copy.length > 118 ? `${copy.slice(0, 118).trimEnd()}…` : copy; return `<a class="entry" href="${localizedPath(`/p/${encodeURIComponent(post.id)}`)}"><time>${escapeHtml(String(post.created_at || "").slice(0, 10))}</time><div><h2>${escapeHtml(language === "tr" ? post.title_tr : post.title_en)}</h2><p>${escapeHtml(summary)}</p></div></a>`; }).join("");
+      const pagination = pageCount > 1 ? `<nav class="pagination" aria-label="${language === "tr" ? "Blog sayfaları" : "Blog pages"}">${Array.from({ length: pageCount }, (_, index) => `<button type="button" class="${index + 1 === currentPage ? "is-current" : ""}" aria-current="${index + 1 === currentPage ? "page" : "false"}" data-page="${index + 1}">${index + 1}</button>`).join("")}</nav>` : "";
+      list.innerHTML = `${entries}${pagination}`;
+      list.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => { currentPage = Number(button.dataset.page); renderPosts(); list.scrollIntoView({ behavior: "smooth", block: "start" }); }));
     };
     fetch("/api/public/posts").then((response) => response.ok ? response.json() : Promise.reject()).then((payload) => { posts = Array.isArray(payload.posts) ? payload.posts : []; renderPosts(); }).catch(() => {});
     document.addEventListener("beyza-language-change", renderPosts);
