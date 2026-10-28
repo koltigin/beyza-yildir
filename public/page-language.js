@@ -86,7 +86,11 @@
 
   // The public blog is driven by the same D1 records that appear in Studio.
   // This makes every demo item removable from the publishing panel.
-  if (location.pathname.replace(/\/$/, "") === "/blog") {
+  // The Worker exposes translated pages under /tr/* and /en/*. Treat those
+  // addresses as their underlying public page as well, otherwise the blog
+  // archive remains on its static fallback while the home page is current.
+  const publicPath = location.pathname.replace(/^\/(?:tr|en)(?=\/|$)/, "").replace(/\/$/, "") || "/";
+  if (publicPath === "/blog") {
     const list = document.querySelector(".list");
     let posts = [];
     const escapeHtml = (value) => String(value || "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
